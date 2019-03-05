@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 04 15:26:55 2019
-@author: saviokay
+@author: jianwuwang, saviokay
 """
 import numpy as np
 import xarray as xr
@@ -65,14 +65,11 @@ cm = np.zeros((2030,1354), dtype=np.float32)
 for MOD06_file in MOD06_filename2:
     MOD06_file2 = myd06_name + MOD06_file
     myd06 = Dataset(MOD06_file2, "r")
-    CM = myd06.variables["Cloud_Mask_1km"][:,:,:]# Reading Specific Variable 'Cloud_Mask_1km'.
+    # Reading Specific Variable 'Cloud_Mask_1km'.
     CM = myd06.variables["Cloud_Mask_1km"][:,:,0]
-    bit0r   = (np.array(CM,dtype='byte') & 0b00000001)
-    bit12r   = (np.array(CM,dtype='byte') & 0b00000110) >>1
+    CM = (np.array(CM,dtype='byte') & 0b00000110) >>1
     CM = np.array(CM).byteswap().newbyteorder()
     cm = np.dstack((cm,CM))
-    bit0 = np.dstack((bit0,bit0r))
-    bit12 = np.dstack((bit12,bit12r))
 
 print('The Cloud Mask Array Shape Is: ',cm.shape)
 
@@ -152,7 +149,7 @@ for i in range(len(finallist)):
 
 print(cf_array)
 
-# Read Total Cloud Fraction And GeoLocation Varibales To Create HDF5 Output File.
+# Read Total Cloud Fraction And GeoLocation Varibales To Create/Save HDF5 Output File.
 total_cloud_fraction = cf_array
 out_name = 'output_final4.hdf5'
 def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
@@ -199,7 +196,7 @@ def read_MODIS_level2_data(MOD06_file,MOD03_file):
 
     return latitude,longitude,CM
 
-# Misc Function For Processing Cloud Fraction.
+# Filtering Function For Cloud Fraction.
 def value_locate(refx, x):
     refx = np.array(refx)
     x = np.array(x)
