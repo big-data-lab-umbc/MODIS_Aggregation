@@ -197,30 +197,6 @@ def read_MODIS_level2_data(MOD06_file,MOD03_file):
     return latitude,longitude,CM
 
 # Filtering Function For Cloud Fraction.
-def value_locate(refx, x):
-    refx = np.array(refx)
-    x = np.array(x)
-    loc = np.zeros(len(x), dtype='int')
-
-    for i in range(len(x)):
-        ix = x[i]
-        ind = ((refx - ix) <= 0).nonzero()[0]
-        if len(ind) == 0:
-            loc[i] = -1
-        else: loc[i] = ind[-1]
-
-    return loc
-
-def division(n, d):
-
-    div = np.zeros(len(d))
-    for i in range(len(d)):
-        if d[i] >0:
-          div[i]=n[i]/d[i]
-        else: div[i]=None
-
-    return div
-
 def filter_cf(x, axis=1):
     count0 = 0
     for i in x:
