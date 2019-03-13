@@ -71,7 +71,7 @@ def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
 parser = argparse.ArgumentParser()
 parser.add_argument('mod3_path', nargs='?', const=1, default="input-data/MYD03/")
 parser.add_argument('mod6_path', nargs='?', const=1, default="input-data/MYD06/")
-parser.add_argument('output_path', nargs='?', const=1, default="output-data/")
+parser.add_argument('output_path', nargs='?', const=1, default="output-data/output.hdf5")
 args = parser.parse_args()
 MOD03_path =args.mod3_path #'input-data/MYD3'
 MOD06_path =args.mod6_path #'input-data/MYD6'
