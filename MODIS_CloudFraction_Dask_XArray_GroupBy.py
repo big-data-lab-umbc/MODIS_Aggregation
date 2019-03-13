@@ -15,12 +15,67 @@ import dask.array as da
 import h5py
 from dask_jobqueue import SLURMCluster
 from dask.distributed import Client
+import argparse
 
 
+#Function: Read Function For MODO3 & MODO6 Files.
+def read_MODIS_level2_data(MOD06_file,MOD03_file):
+    #print('Reading The Cloud Mask From MOD06_L2 Product:')
+    myd06 = Dataset(MOD06_file, "r")
+    CM = myd06.variables["Cloud_Mask_1km"][:,:,:] # Reading Specific Variable 'Cloud_Mask_1km'.
+    CM   = (np.array(CM[:,:,0],dtype='byte') & 0b00000110) >>1
+    CM = np.array(CM).byteswap().newbyteorder()
+   # print('The Level-2 Cloud Mask Array Shape',CM.shape)
+    print(' ')
 
-# Setting File Location As Environment Variables
-MOD03_path =sys.argv[1] #'HDFFiles/'
-MOD06_path =sys.argv[2] #'HDFFiles/'
+    myd03 = Dataset(MOD03_file, "r")
+    #print('Reading The Latitude-Longitude From MOD03 Product:')
+    latitude = myd03.variables["Latitude"][:,:] # Reading Specific Variable 'Latitude'.
+    latitude = np.array(latitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
+    longitude = myd03.variables["Longitude"][:,:] # Reading Specific Variable 'Longitude'.
+    longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
+    #print('The Level-2 Latitude-Longitude Array Shape',latitude.shape)
+    print(' ')
+
+    return latitude,longitude,CM
+
+#Function: Filtering Function For Cloud Fraction.
+def filter_cf(x, axis=1):
+    count0 = 0
+    for i in x:
+        if i <= 1:
+            count0 +=1
+    return count0/len(x)
+
+#Function: Save Total Cloud Fraction And GeoLocation Varibales To HDF5 Output File.
+def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
+    f=h5py.File(out_name,'w')
+    PCentry=f.create_dataset('CF',data=total_cloud_fraction)
+    PCentry.dims[0].label='lat_bnd'
+    PCentry.dims[1].label='lon_bnd'
+
+    PC=f.create_dataset('lat_bnd',data=lat_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Latitude_boundaries'
+
+    PC=f.create_dataset('lon_bnd',data=lon_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Longitude_boundaries'
+    f.close()
+    print(out_name+' Saved!!')
+
+
+# Beginning of the main code
+
+# Read input from commmandline arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--mod3_path', nargs='?', const=1, type=String, default="input-data/MOD3")
+parser.add_argument('--mod6_path', nargs='?', const=1, type=String, default="input-data/MOD6")
+parser.add_argument('--output_path', nargs='?', const=1, type=String, default="output-data/")
+args = parser.parse_args()
+MOD03_path =args[1] #'input-data/MOD3'
+MOD06_path =args[2] #'input-data/MOD6'
+outfile_name = args[3] #'output-data/'
 
 
 satellite = 'Aqua'
@@ -151,55 +206,11 @@ print(cf_array)
 
 # Read Total Cloud Fraction And GeoLocation Varibales To Create/Save HDF5 Output File.
 total_cloud_fraction = cf_array
-out_name = 'output_final4.hdf5'
-def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
-    f=h5py.File(out_name,'w')
-    PCentry=f.create_dataset('CF',data=total_cloud_fraction)
-    PCentry.dims[0].label='lat_bnd'
-    PCentry.dims[1].label='lon_bnd'
-
-    PC=f.create_dataset('lat_bnd',data=lat_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Latitude_boundaries'
-
-    PC=f.create_dataset('lon_bnd',data=lon_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Longitude_boundaries'
-    f.close()
-    print(out_name+' Saved!!')
-
-save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd)
+save_hdf(outfile_name,total_cloud_fraction,lat_bnd,lon_bnd)
 
 # Final Maintenance.
 del dsag
 del oneGrid
 cluster.close()
 
-# Read Function For MODO3 & MODO6 Files.
-def read_MODIS_level2_data(MOD06_file,MOD03_file):
-    #print('Reading The Cloud Mask From MOD06_L2 Product:')
-    myd06 = Dataset(MOD06_file, "r")
-    CM = myd06.variables["Cloud_Mask_1km"][:,:,:] # Reading Specific Variable 'Cloud_Mask_1km'.
-    CM   = (np.array(CM[:,:,0],dtype='byte') & 0b00000110) >>1
-    CM = np.array(CM).byteswap().newbyteorder()
-   # print('The Level-2 Cloud Mask Array Shape',CM.shape)
-    print(' ')
 
-    myd03 = Dataset(MOD03_file, "r")
-    #print('Reading The Latitude-Longitude From MOD03 Product:')
-    latitude = myd03.variables["Latitude"][:,:] # Reading Specific Variable 'Latitude'.
-    latitude = np.array(latitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
-    longitude = myd03.variables["Longitude"][:,:] # Reading Specific Variable 'Longitude'.
-    longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
-    #print('The Level-2 Latitude-Longitude Array Shape',latitude.shape)
-    print(' ')
-
-    return latitude,longitude,CM
-
-# Filtering Function For Cloud Fraction.
-def filter_cf(x, axis=1):
-    count0 = 0
-    for i in x:
-        if i <= 1:
-            count0 +=1
-    return count0/len(x)
