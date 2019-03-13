@@ -153,12 +153,12 @@ latint = lat.astype(np.int8)
 lonint = lon.astype(np.int8)
 
 # Creating Cluster With The Function 'SLURMCluster' With Cluster's Configurations As Arguments.
-cluster = SLURMCluster(cores=16, memory='32GB', project='pi_jianwu', walltime='02:00:00', queue='batch', job_extra=['--qos=medium+'])
-cluster.scale(5) #Scaling To With Scale Function.
+#cluster = SLURMCluster(cores=16, memory='32GB', project='pi_jianwu', walltime='02:00:00', queue='batch', job_extra=['--qos=medium+'])
+#cluster.scale(5) #Scaling To With Scale Function.
 
-client = Client(cluster)
-print(client)
-print(cluster)
+#client = Client(cluster)
+#print(client)
+#print(cluster)
 
 # Creating Dask Arrays With Chunks With The Array Variables.
 lat = da.from_array(lat, chunks =(2030,1354,1))
@@ -211,6 +211,6 @@ save_hdf(outfile_name,total_cloud_fraction,lat_bnd,lon_bnd)
 # Final Maintenance.
 del dsag
 del oneGrid
-cluster.close()
+#cluster.close()
 
 
