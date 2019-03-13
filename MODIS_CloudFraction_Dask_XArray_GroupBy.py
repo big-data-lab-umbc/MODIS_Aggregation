@@ -69,8 +69,8 @@ def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
 
 # Read input from commmandline arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('mod3_path', nargs='?', const=1, default="input-data/MYD3")
-parser.add_argument('mod6_path', nargs='?', const=1, default="input-data/MYD6")
+parser.add_argument('mod3_path', nargs='?', const=1, default="input-data/MYD03/")
+parser.add_argument('mod6_path', nargs='?', const=1, default="input-data/MYD06/")
 parser.add_argument('output_path', nargs='?', const=1, default="output-data/")
 args = parser.parse_args()
 MOD03_path =args.mod3_path #'input-data/MYD3'
@@ -114,11 +114,10 @@ print('The Number Of Files In The MODO6_L2 List: ')
 print(len(MOD06_filename2))
 print(' ')
 
-myd06_name = sys.argv[1] #Passed While Code Execution.
 cm = np.zeros((2030,1354), dtype=np.float32)
 
 for MOD06_file in MOD06_filename2:
-    MOD06_file2 = myd06_name + MOD06_file
+    MOD06_file2 = MOD06_path + MOD06_file
     myd06 = Dataset(MOD06_file2, "r")
     # Reading Specific Variable 'Cloud_Mask_1km'.
     CM = myd06.variables["Cloud_Mask_1km"][:,:,0]
@@ -128,14 +127,11 @@ for MOD06_file in MOD06_filename2:
 
 print('The Cloud Mask Array Shape Is: ',cm.shape)
 
-myd03_name = sys.argv[2] #Passed While Code Execution.
-
-
 lat = np.zeros((2030,1354), dtype=np.float32)
 lon = np.zeros((2030,1354), dtype=np.float32)
 
 for MOD03_file in MOD03_filename2:
-    MOD03_file2 = myd03_name + MOD03_file
+    MOD03_file2 = MOD03_path + MOD03_file
     myd03 = Dataset(MOD03_file2, "r")
     latitude = myd03.variables["Latitude"][:,:] # Reading Specific Variable 'Latitude'.
     lat = np.dstack((lat,latitude))
