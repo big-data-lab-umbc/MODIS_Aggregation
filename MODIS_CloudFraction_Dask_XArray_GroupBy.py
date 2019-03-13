@@ -103,9 +103,9 @@ for MOD03_filelist in  os.listdir(MOD03_path):
         MOD03_filename = MOD03_filelist
         MOD03_filename2.append(MOD03_filelist)
 
-if MOD03_filename and MOD06_filename:
-    print('Reading Level 2 GeoLocation & Cloud Data')
-    Lat,Lon,CM = read_MODIS_level2_data(MOD06_path+MOD06_filename,MOD03_path+MOD03_filename)
+#if MOD03_filename and MOD06_filename:
+#    print('Reading Level 2 GeoLocation & Cloud Data')
+#    Lat,Lon,CM = read_MODIS_level2_data(MOD06_path+MOD06_filename,MOD03_path+MOD03_filename)
 
 print('The Number Of Files In The MODO3 List: ')
 print(len(MOD03_filename2))
