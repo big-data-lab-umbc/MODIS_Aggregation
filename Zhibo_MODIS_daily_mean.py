@@ -96,8 +96,8 @@ def division(n, d):
 if __name__ == '__main__':
     out_name=sys.argv[1]
     import itertools
-    MOD03_path = '/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_data/'#'./Shared_Sample/'
-    MOD06_path = '/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_data/'#'./Shared_Sample/'
+    MOD03_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+    MOD06_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
     satellite = 'Aqua'
 
     yr = [2008]
@@ -111,6 +111,7 @@ if __name__ == '__main__':
 
     TOT_pix      = np.zeros(nlat*nlon)
     CLD_pix      = np.zeros(nlat*nlon)
+    CER_pix      = np.zeros(nlat*nlon)
 
     tot_comT=0 #total time for computation
     for y,m,d in  itertools.product(yr,mn, dy):
@@ -121,7 +122,7 @@ if __name__ == '__main__':
         JD = np.int((JD2+JD1)-(JD01+JD02) + 1)
         granule_time = datetime.datetime(y,m,d,0,0)
         while granule_time <= datetime.datetime(y,m,d,23,55):  # 23,55
-            print('granule time:',granule_time)
+#            print('granule time:',granule_time)
             MOD03_fp = 'MYD03.A{:04d}{:03d}.{:02d}{:02d}.006.?????????????.hdf'.format(y,JD,granule_time.hour,granule_time.minute)
             MOD06_fp = 'MYD06_L2.A{:04d}{:03d}.{:02d}{:02d}.006.?????????????.hdf'.format(y,JD,granule_time.hour,granule_time.minute)
             MOD03_fn, MOD06_fn =[],[]
@@ -132,14 +133,16 @@ if __name__ == '__main__':
                 if fnmatch.fnmatch(MOD03_flist, MOD03_fp):
                     MOD03_fn = MOD03_flist
             if MOD03_fn and MOD06_fn: # if both MOD06 and MOD03 products are in the directory
-                print('reading level 2 geolocation and cloud data')
+#                print('reading level 2 geolocation and cloud data')
                 print(MOD06_fn)
                 Lat,Lon,data = read_MODIS_level2_dataV2(MOD06_path+MOD06_fn,MOD03_path+MOD03_fn)
                 CM = data['CM']
+                CER=data['CER']
                 start=time.time()
                 Lat=Lat.ravel()
                 Lon=Lon.ravel()
                 CM=CM.ravel()
+                CER=CER.ravel()
 #                print('Total Number of pixels in this granule (cloud mask CM>=0)',np.sum(CM>=0))
 #                print('Total Number of cloudy pixels (cloud mask CM<=1)',np.sum(CM<=1))
 #                print('cloud fraction of this granule',np.sum(CM<=1)/np.sum(CM>=0))
@@ -147,24 +150,27 @@ if __name__ == '__main__':
                 lat_index = value_locate(lat_bnd,Lat)
                 lon_index = value_locate(lon_bnd,Lon)
                 latlon_index = lat_index*nlon + lon_index
-                print('computing simple level3 statistics')
+#                print('computing simple level3 statistics')
                 latlon_index_unique = np.unique(latlon_index)
-                print('this granule occupies',latlon_index_unique.size,'1x1 degree box')
+#                print('this granule occupies',latlon_index_unique.size,'1x1 degree box')
                 
                 for i in np.arange(latlon_index_unique.size):
                     j=latlon_index_unique[i]
                     TOT_pix[j] = TOT_pix[j]+np.sum(CM[np.where(latlon_index == j)]>=0)
                     CLD_pix[j] = CLD_pix[j]+np.sum(CM[np.where(latlon_index == j)]<=1) 
+                    CER_pix[j] = CER_pix[j]+np.sum(CER[np.where(latlon_index == j)])
                 end=time.time()
                 tot_comT=tot_comT+(end/60-start/60)
             granule_time += datetime.timedelta(minutes=5)
 
     print('derive the averaged Level-3 cloud fraction')
     total_cloud_fraction  =  division(CLD_pix,TOT_pix).reshape([nlat,nlon])
+    mean_CER = division(CER_pix,CLD_pix).reshape([nlat,nlon])
     print(np.nansum(total_cloud_fraction))
+    print(np.nanmean(mean_CER))
     print('Total time computational time excluding the file reading:%0.2f min'%(tot_comT))
    
-    save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd)
+    save_hdf(out_name,total_cloud_fraction,mean_CER,lat_bnd,lon_bnd)
 #    print('plot global map')
 #    plot_global_map(lat_bnd,lon_bnd,total_cloud_fraction, cmap= plt.get_cmap('jet'), \
 #            vmin=0.0,vmax=1.0,title='cloud fraction', figure_name='MODIS_total_cloud_fraction_daily_mean_Python')
