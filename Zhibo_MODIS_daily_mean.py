@@ -96,8 +96,11 @@ def division(n, d):
 if __name__ == '__main__':
     out_name=sys.argv[1]
     import itertools
-    MOD03_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
-    MOD06_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+#    MOD03_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+#    MOD06_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+    MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+    MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+
     satellite = 'Aqua'
 
     yr = [2008]
