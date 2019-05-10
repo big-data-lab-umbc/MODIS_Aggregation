@@ -25,18 +25,24 @@ def read_MODIS_level2_dataV2(MYD06_file,MYD03_file):
     myd06 = Dataset(MYD06_file, "r")
     CM1km  = readEntry('Cloud_Mask_1km',myd06)             #Cloud mask
     CM     = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
-    CER = readEntry('Cloud_Effective_Radius',myd06)     #Cloud Effective Radius in micron
-    COT = readEntry('Cloud_Optical_Thickness',myd06)    #Cloud Optical Thickness
+    CTP = readEntry('cloud_top_pressure_1km',myd06)     #Cloud Top Pressure (hPa)
+    CTT = readEntry('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
+    CTH = readEntry('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
+    
     myd03 = Dataset(MYD03_file, "r")
     latitude = myd03.variables["Latitude"][:,:] # Reading Specific Variable 'Latitude'.
     latitude = np.array(latitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
     longitude = myd03.variables["Longitude"][:,:] # Reading Specific Variable 'Longitude'.
     longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
-    data={'CM':CM,'CER':CER,'COT':COT}
+    data={'CM':CM,'CTP':CTP,'CTT':CTT,'CTH':CTH}
     return latitude,longitude,data
-def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
+def save_hdf(out_name,total_cloud_fraction,mean_CER,lat_bnd,lon_bnd):
     f=h5py.File(out_name,'w')
     PCentry=f.create_dataset('CF',data=total_cloud_fraction)
+    PCentry.dims[0].label='lat_bnd'
+    PCentry.dims[1].label='lon_bnd'
+    
+    PCentry=f.create_dataset('CER',data=mean_CER)
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
     
@@ -59,8 +65,9 @@ if __name__=='__main__':
     MOD03_file=MOD03_path+MOD03F
     lat,lon,data=read_MODIS_level2_dataV2(MOD06_file,MOD03_file)  
     CM  = data['CM']
-    CER = data['CER']
-
+    CTP = data['CTP']
+    CTT = data['CTT']
+    CTH = data['CTH']
 
 
 
