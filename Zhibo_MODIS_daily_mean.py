@@ -96,10 +96,10 @@ def division(n, d):
 if __name__ == '__main__':
     out_name=sys.argv[1]
     import itertools
-#    MOD03_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
-#    MOD06_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
-    MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
-    MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+    MOD03_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+    MOD06_path = '../zz_MODIS_aggregation/Shared_Sample/'#'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+#    MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+#    MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
 
     satellite = 'Aqua'
 
@@ -114,9 +114,12 @@ if __name__ == '__main__':
 
     TOT_pix      = np.zeros(nlat*nlon)
     CLD_pix      = np.zeros(nlat*nlon)
-    CER_pix      = np.zeros(nlat*nlon)
-
-    tot_comT=0 #total time for computation
+    CTP_pix      = np.zeros(nlat*nlon)
+    CTT_pix      = np.zeros(nlat*nlon)
+    CTH_pix      = np.zeros(nlat*nlon)
+    mean = {}
+    tot_F=0 #Total number of file couples read
+    start=time.time()
     for y,m,d in  itertools.product(yr,mn, dy):
         #-------------find the MODIS prodcts--------------#
         date = datetime.datetime(y,m,d)
@@ -137,15 +140,15 @@ if __name__ == '__main__':
                     MOD03_fn = MOD03_flist
             if MOD03_fn and MOD06_fn: # if both MOD06 and MOD03 products are in the directory
 #                print('reading level 2 geolocation and cloud data')
-                print(MOD06_fn)
+#                print(MOD06_fn)
+                tot_F+=1
                 Lat,Lon,data = read_MODIS_level2_dataV2(MOD06_path+MOD06_fn,MOD03_path+MOD03_fn)
-                CM = data['CM']
-                CER=data['CER']
-                start=time.time()
+                CM  = data['CM'].ravel()
+                CTP = data['CTP'].ravel()
+                CTT = data['CTT'].ravel()
+                CTH = data['CTH'].ravel()
                 Lat=Lat.ravel()
                 Lon=Lon.ravel()
-                CM=CM.ravel()
-                CER=CER.ravel()
 #                print('Total Number of pixels in this granule (cloud mask CM>=0)',np.sum(CM>=0))
 #                print('Total Number of cloudy pixels (cloud mask CM<=1)',np.sum(CM<=1))
 #                print('cloud fraction of this granule',np.sum(CM<=1)/np.sum(CM>=0))
@@ -155,25 +158,31 @@ if __name__ == '__main__':
                 latlon_index = lat_index*nlon + lon_index
 #                print('computing simple level3 statistics')
                 latlon_index_unique = np.unique(latlon_index)
-#                print('this granule occupies',latlon_index_unique.size,'1x1 degree box')
-                
+#                print('this granule occupies',latlon_index_unique.size,'1x1 degree box')             
                 for i in np.arange(latlon_index_unique.size):
                     j=latlon_index_unique[i]
                     TOT_pix[j] = TOT_pix[j]+np.sum(CM[np.where(latlon_index == j)]>=0)
                     CLD_pix[j] = CLD_pix[j]+np.sum(CM[np.where(latlon_index == j)]<=1) 
-                    CER_pix[j] = CER_pix[j]+np.sum(CER[np.where(latlon_index == j)])
-                end=time.time()
-                tot_comT=tot_comT+(end/60-start/60)
+                    CTP_pix[j] = CTP_pix[j]+np.sum(CTP[np.where(latlon_index == j)])
+                    CTT_pix[j] = CTT_pix[j]+np.sum(CTT[np.where(latlon_index == j)])
+                    CTH_pix[j] = CTH_pix[j]+np.sum(CTH[np.where(latlon_index == j)])
             granule_time += datetime.timedelta(minutes=5)
 
     print('derive the averaged Level-3 cloud fraction')
     total_cloud_fraction  =  division(CLD_pix,TOT_pix).reshape([nlat,nlon])
-    mean_CER = division(CER_pix,CLD_pix).reshape([nlat,nlon])
-    print(np.nansum(total_cloud_fraction))
-    print(np.nanmean(mean_CER))
-    print('Total time computational time excluding the file reading:%0.2f min'%(tot_comT))
+    mean['CTP'] = division(CTP_pix,CLD_pix).reshape([nlat,nlon])
+    mean['CTT'] = division(CTT_pix,CLD_pix).reshape([nlat,nlon])
+    mean['CTH'] = division(CTH_pix,CLD_pix).reshape([nlat,nlon])
+    save_hdf(out_name,total_cloud_fraction,mean,lat_bnd,lon_bnd)
+    end=time.time()
+    print('Total # of file couples read:%d'%(tot_F))
+    print('Total Cloud Fraction: %0.2f'%np.nansum(total_cloud_fraction))
+    print('Mean CTP: %0.2f hPa'%np.nanmean(mean['CTP']))
+    print('Mean CTT: %0.2f K'%np.nanmean(mean['CTT']))
+    print('Mean CTH: %0.2f m'%np.nanmean(mean['CTH']))
+    print('Time elapsed:%0.2f min'%(end/60-start/60))
    
-    save_hdf(out_name,total_cloud_fraction,mean_CER,lat_bnd,lon_bnd)
+    
 #    print('plot global map')
 #    plot_global_map(lat_bnd,lon_bnd,total_cloud_fraction, cmap= plt.get_cmap('jet'), \
 #            vmin=0.0,vmax=1.0,title='cloud fraction', figure_name='MODIS_total_cloud_fraction_daily_mean_Python')

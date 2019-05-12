@@ -36,16 +36,24 @@ def read_MODIS_level2_dataV2(MYD06_file,MYD03_file):
     longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
     data={'CM':CM,'CTP':CTP,'CTT':CTT,'CTH':CTH}
     return latitude,longitude,data
-def save_hdf(out_name,total_cloud_fraction,mean_CER,lat_bnd,lon_bnd):
+def save_hdf(out_name,total_cloud_fraction,mean,lat_bnd,lon_bnd):
     f=h5py.File(out_name,'w')
     PCentry=f.create_dataset('CF',data=total_cloud_fraction)
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
     
-    PCentry=f.create_dataset('CER',data=mean_CER)
+    PCentry=f.create_dataset('CTP',data=mean['CTP'])
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
     
+    PCentry=f.create_dataset('CTT',data=mean['CTT'])
+    PCentry.dims[0].label='lat_bnd'
+    PCentry.dims[1].label='lon_bnd'
+
+    PCentry=f.create_dataset('CTH',data=mean['CTH'])
+    PCentry.dims[0].label='lat_bnd'
+    PCentry.dims[1].label='lon_bnd'
+
     PC=f.create_dataset('lat_bnd',data=lat_bnd)
     PC.attrs['units']='degrees'
     PC.attrs['long_name']='Latitude_boundaries'    
