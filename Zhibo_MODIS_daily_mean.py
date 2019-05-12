@@ -98,8 +98,8 @@ if __name__ == '__main__':
     mode = str(sys.argv[2]) # test: Only use 3 file couples, oneDay: 288 files
     import itertools
     if mode=='test':
-        MOD03_path = '../zz_MODIS_aggregation/Shared_Sample/'
-        MOD06_path = '../zz_MODIS_aggregation/Shared_Sample/'
+        MOD03_path = 'input-data/MYD03/'
+        MOD06_path = 'input-data/MYD06/'
     elif mode=='oneDay':
         MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
         MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
