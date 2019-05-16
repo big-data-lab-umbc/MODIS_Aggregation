@@ -1,0 +1,14 @@
+Zhibo_MODIS_daily_mean.py:169: UserWarning: Warning: converting a masked element to nan.
+  CTP_pix[j] = CTP_pix[j]+np.sum(CTP[np.where(latlon_index == j)])
+Zhibo_MODIS_daily_mean.py:170: UserWarning: Warning: converting a masked element to nan.
+  CTT_pix[j] = CTT_pix[j]+np.sum(CTT[np.where(latlon_index == j)])
+Zhibo_MODIS_daily_mean.py:171: UserWarning: Warning: converting a masked element to nan.
+  CTH_pix[j] = CTH_pix[j]+np.sum(CTH[np.where(latlon_index == j)])
+derive the averaged Level-3 cloud fraction
+MODAgg_3var_oneDay_20080101.hdf5 Saved!!
+Total # of file couples read:288
+Total Cloud Fraction: 44226.46
+Mean CTP: 65.36 hPa
+Mean CTT: -298.94 K
+Mean CTH: 4242.76 m
+Time elapsed:364.03 min
