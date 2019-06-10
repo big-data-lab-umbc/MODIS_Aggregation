@@ -8,6 +8,7 @@ Chamara Rajapakshe
 (cpn.here@umbc.edu)
 ********************************************
 MODIS data aggregation - Multiple variables
+I/O routings
 """
 from netCDF4 import Dataset
 import numpy as np
