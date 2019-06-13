@@ -20,29 +20,11 @@ class MODIS_L2_L3_Aggregation:
 
         t0 = time.time()
 
-        #M03_2040 = np.loadtxt("/umbc/xfs1/jianwu/users/rwalid1/individual/work/Cybtrn-team3/M03_2040.txt",
-        #                      comments="#", delimiter=",", unpack=True, dtype='str')
-
         M03_dir = "../../input-data/MYD03/"
-
         M03_2040 = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
 
-
-
-
-        #M06_2040 = np.loadtxt("/umbc/xfs1/jianwu/users/rwalid1/individual/work/Cybtrn-team3/M06_2040.txt",
-        #                      comments="#", delimiter=",", unpack=True, dtype='str')
-
         M06_dir = "../../input-data/MYD06/"
-
         M06_2040 = sorted(glob.glob(M06_dir+ "MYD06_L2.A2008*"))
-
-
-
-        #M03_2040 = np.loadtxt("/Users/charlesbecker/Desktop/test_text5.txt",
-        #                      comments="#", delimiter=",", unpack=True, dtype='str')
-        #M06_2040 = np.loadtxt("/Users/charlesbecker/Desktop/test_text4.txt",
-        #                      comments="#", delimiter=",", unpack=True, dtype='str')
 
         total_pix = np.zeros((180, 360))
         cloud_pix = np.zeros((180, 360))
@@ -75,17 +57,13 @@ class MODIS_L2_L3_Aggregation:
 
         #print(cloud_pix)
 
-
-
         t1 = time.time()
         total = t1-t0
         print(total)
 
-
         total_pix[np.where(total_pix == 0)]=1.0
         cf = cloud_pix/total_pix
         print(cf)
-
 
         plt.figure(figsize=(14,7))
         plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
