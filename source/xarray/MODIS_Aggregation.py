@@ -91,4 +91,5 @@ class MODIS_L2_L3_Aggregation:
         return outputFile
 
 aggregate = MODIS_L2_L3_Aggregation()
-aggregate.CloudFraction_Daily_Aggregation(satellite = "Aqua", date = "2008001")
+outputFile = aggregate.CloudFraction_Daily_Aggregation(satellite = "Aqua", date = "2008001")
+print("output file is:" + outputFile)
