@@ -9,7 +9,7 @@ import time
 
 class MODIS_L2_L3_Aggregation:
 
-    def CloudFraction_Daily_Aggregation(self):
+    def CloudFraction_Daily_Aggregation(self, satellite = "Aqua", date = "2008001"):
         var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 'SensorAzimuth',
             'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
@@ -20,11 +20,18 @@ class MODIS_L2_L3_Aggregation:
 
         t0 = time.time()
 
-        M03_dir = "../../input-data/MYD03/"
-        M03_2040 = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
+        if (satellite == "Aqua"):
+            collection = "MYD"
+        elif (satellite == "Terra"):
+            collection = "MOD"
+        else:
+            raise ValueError("The function only accepts Aqua or Terra for satellite parameter. Your parameter value is " + satellite)
 
-        M06_dir = "../../input-data/MYD06/"
-        M06_2040 = sorted(glob.glob(M06_dir+ "MYD06_L2.A2008*"))
+        M03_dir = "../../input-data/" + collection + "03/"
+        M03_2040 = sorted(glob.glob(M03_dir + collection + "03.A" + date + "*"))
+
+        M06_dir = "../../input-data/" + collection + "06/"
+        M06_2040 = sorted(glob.glob(M06_dir + collection + "06_L2.A" + date + "*"))
 
         total_pix = np.zeros((180, 360))
         cloud_pix = np.zeros((180, 360))
@@ -65,19 +72,23 @@ class MODIS_L2_L3_Aggregation:
         cf = cloud_pix/total_pix
         print(cf)
 
+        outputFile = collection + "08_D3.A" + date + "CloudFraction"
+
         plt.figure(figsize=(14,7))
         plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
         plt.xlabel("Longitude", fontsize = 14)
         plt.ylabel("Latitude", fontsize = 14)
         plt.title("Level 3 Cloud Fraction Aggregation Result", fontsize = 16)
         plt.colorbar()
-        plt.savefig("../../output-data/AggregatedL3File.png")
+        plt.savefig("../../output-data/" + outputFile + ".png")
         cf1 = xr.DataArray(cf)
-        cf1.to_netcdf("../../output-data/AggregatedL3File.nc")
+        cf1.to_netcdf("../../output-data/" + outputFile + ".nc")
 
-        with open("../../output-data/execution-time.txt", "a") as output:
+        with open("../../output-data/" + outputFile + "-execution-time.txt", "a") as output:
             output.write('\n')
             output.write(str(total))
 
+        return outputFile
+
 aggregate = MODIS_L2_L3_Aggregation()
-aggregate.CloudFraction_Daily_Aggregation()
+aggregate.CloudFraction_Daily_Aggregation(satellite = "Aqua", date = "2008001")
