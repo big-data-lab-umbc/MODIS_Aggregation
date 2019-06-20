@@ -5,4 +5,6 @@
 #SBATCH --partition=batch
 #SBATCH --qos=long+
 #SBATCH --mem=32000
-python MODAgg_daily_mean.py MODAgg_3var_month_20080101.hdf5 month
+mode='month'
+day=1
+python MODAgg_daily_mean.py MODAgg_3var_month_ ${mode} ${day}
