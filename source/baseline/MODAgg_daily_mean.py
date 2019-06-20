@@ -95,12 +95,17 @@ def division(n, d):
 # beginning of the program
 if __name__ == '__main__':
     out_name=sys.argv[1]
-    mode = str(sys.argv[2]) # test: Only use 3 file couples, oneDay: 288 files
+    mode = str(sys.argv[2]) 
+    '''
+    test: Only use 3 file couples, oneDay: 288 files
+    parMonth: Parallel (a month)
+    '''
+    day = int(sys.argv[3])
     import itertools
     if mode=='test':
         MOD03_path = 'input-data/MYD03/'
         MOD06_path = 'input-data/MYD06/'
-    elif mode=='oneDay' or mode=='month':
+    else:
         MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
         MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
 
@@ -108,8 +113,9 @@ if __name__ == '__main__':
 
     yr = [2008]
     mn = [1] #np.arange(1,13)  #[1]
-    dy = np.arange(1,32) #np.arange(1,32) # [1] #np.arange(1,31)
+    dy = [day] #np.arange(1,32) # [1] #np.arange(1,31)
     # latitude and longtitude boundaries of level-3 grid
+    out_name=out_name+"%d%02d%02d.hdf5"%(yr[0],mn[0],day)
     lat_bnd = np.arange(-90,91,1)
     lon_bnd = np.arange(-180,180,1)
     nlat = 180
