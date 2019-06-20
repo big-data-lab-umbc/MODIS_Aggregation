@@ -16,7 +16,7 @@ from jdcal import gcal2jd
 import math
 import time
 
-from cpn_MODAgg import read_MODIS_level2_dataV2, save_hdf
+from MODAgg_IO import read_MODIS_level2_dataV2, save_hdf
 
 def read_MODIS_level2_data(MOD06_file,MOD03_file):
     print(MOD06_file)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     if mode=='test':
         MOD03_path = 'input-data/MYD03/'
         MOD06_path = 'input-data/MYD06/'
-    elif mode=='oneDay':
+    elif mode=='oneDay' or mode=='month':
         MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
         MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
     yr = [2008]
     mn = [1] #np.arange(1,13)  #[1]
-    dy = [1] #np.arange(1,32) # [1] #np.arange(1,31)
+    dy = np.arange(1,32) #np.arange(1,32) # [1] #np.arange(1,31)
     # latitude and longtitude boundaries of level-3 grid
     lat_bnd = np.arange(-90,91,1)
     lon_bnd = np.arange(-180,180,1)
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     print('Mean CTP: %0.2f hPa'%np.nanmean(mean['CTP']))
     print('Mean CTT: %0.2f K'%np.nanmean(mean['CTT']))
     print('Mean CTH: %0.2f m'%np.nanmean(mean['CTH']))
-    print('Time elapsed:%0.2f min'%(end/60-start/60))
+    print('Time elapsed:%0.2f hours'%(end/60/60-start/60/60))
    
     
 #    print('plot global map')
