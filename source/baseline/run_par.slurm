@@ -5,7 +5,7 @@
 #SBATCH --partition=batch
 #SBATCH --qos=medium+
 #SBATCH --mem=8000
-#SBATCH --array=1-31%31
+#SBATCH --array=8-10%3
 mode='parMonth'
 day=$SLURM_ARRAY_TASK_ID
 python MODAgg_daily_mean.py MODAgg_3var_parMonth_ ${mode} ${day}
