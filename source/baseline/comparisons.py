@@ -19,7 +19,13 @@ def readData(file):
     la=f['lon_bnd'][:]
     f.close()
     return CF,lo,la
-def doPlot(X,fig_ttl):
+def doPlot(results,benchmark,fig_ttl):
+    '''
+    results,benchmark:180*360 array
+    '''
+    X={}
+    X['rwDay']=results
+    X['bmDay']=benchmark
     fig1,ax1=plt.subplots(3,1,figsize=(6,10))
     fig1.suptitle(fig_ttl)
     cm1=ax1[0].imshow(X['rwDay'],extent=(-180,180,-90,90))
