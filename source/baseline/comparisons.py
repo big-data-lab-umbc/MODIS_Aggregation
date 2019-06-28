@@ -64,7 +64,7 @@ if __name__=='__main__':
     f = Dataset(rwDay_resu, "r")
     CF['rwDay']=f.variables['__xarray_dataarray_variable__'][:]
     f.close()
-    doPlot(CF,rwDay_resu.split('/',-1)[-1])
+    fig1,fig1_ttl=doPlot(CF['bmDay'],CF['rwDay'],rwDay_resu.split('/',-1)[-1])
 
     
 #    fig2,ax2=plt.subplots()
