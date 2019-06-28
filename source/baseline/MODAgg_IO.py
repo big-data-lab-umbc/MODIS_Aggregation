@@ -42,19 +42,27 @@ def save_hdf(out_name,total_cloud_fraction,mean,lat_bnd,lon_bnd):
     PCentry=f.create_dataset('CF',data=total_cloud_fraction)
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
+    PCentry.attrs['units']='Fraction'
+    PCentry.attrs["long_name"]='Cloud_Fraction'
     
     PCentry=f.create_dataset('CTP',data=mean['CTP'])
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
+    PCentry.attrs['units']='hPa'
+    PCentry.attrs['long_name']='Cloud_Top_Pressure'
     
     PCentry=f.create_dataset('CTT',data=mean['CTT'])
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
+    PCentry.attrs['units']='K'
+    PCentry.attrs['long_name']='Cloud_Top_Temperature'
 
     PCentry=f.create_dataset('CTH',data=mean['CTH'])
     PCentry.dims[0].label='lat_bnd'
     PCentry.dims[1].label='lon_bnd'
-
+    PCentry.attrs['units']='m'
+    PCentry.attrs['long_name']='Clout_Top_Height'
+    
     PC=f.create_dataset('lat_bnd',data=lat_bnd)
     PC.attrs['units']='degrees'
     PC.attrs['long_name']='Latitude_boundaries'    

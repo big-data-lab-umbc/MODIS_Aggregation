@@ -19,6 +19,27 @@ def readData(file):
     la=f['lon_bnd'][:]
     f.close()
     return CF,lo,la
+def doPlot(results,benchmark,fig_ttl):
+    '''
+    results,benchmark:180*360 array
+    '''
+    X={}
+    X['rwDay']=results
+    X['bmDay']=benchmark
+    fig1,ax1=plt.subplots(3,1,figsize=(6,10))
+    fig1.suptitle(fig_ttl)
+    cm1=ax1[0].imshow(X['rwDay'],extent=(-180,180,-90,90))
+    cm2=ax1[1].imshow(X['bmDay'],extent=(-180,180,-90,90))
+    bias=X['rwDay']-X['bmDay']
+    cm3=ax1[2].imshow(bias,vmin=-1,vmax=1,extent=(-180,180,-90,90),cmap=plt.cm.seismic)
+    ax1[0].set_title('Results')
+    ax1[1].set_title('Benchmark')
+    ax1[2].set_title('Bias')
+    fig1.colorbar(cm1,ax=ax1[0])
+    fig1.colorbar(cm2,ax=ax1[1])
+    fig1.colorbar(cm3,ax=ax1[2])
+    fig1.show()
+    return fig1,fig_ttl
 if __name__=='__main__':
     sv_results="/umbc/xfs1/jianwu/common/MODIS_Aggregation/output_final2.hdf5"
     zz_results="/umbc/xfs1/jianwu/users/charaj1/CMAC/zz_MODIS_aggregation/Cloud_fraction_test_ZZ.hdf5"
@@ -29,8 +50,7 @@ if __name__=='__main__':
     CF,lo,la={'sv':[],'zz':[],'dpDay':[],'bmDay':[],'rwDay':[]},\
              {'sv':[],'zz':[],'dpDay':[],'bmDay':[],'rwDay':[]},\
              {'sv':[],'zz':[],'dpDay':[],'bmDay':[],'rwDay':[]}
-   
-    
+       
     CF['sv'],lo['sv'],la['sv']=readData(sv_results)
     CF['zz'],lo['zz'],la['zz']=readData(zz_results)
     CF['bmDay'],lo['bmDay'],la['bmDay']=readData(bmDay_resu)
@@ -44,21 +64,8 @@ if __name__=='__main__':
     f = Dataset(rwDay_resu, "r")
     CF['rwDay']=f.variables['__xarray_dataarray_variable__'][:]
     f.close()
-    
-    fig1,ax1=plt.subplots(3,1,figsize=(6,10))
-    fig1_ttl='Cloud_fraction_benchmark_comparison_grid_Redwan'
-    fig1.suptitle(fig1_ttl)
-    cm1=ax1[0].imshow(CF['rwDay'],extent=(-180,180,-90,90))
-    cm2=ax1[1].imshow(CF['bmDay'],extent=(-180,180,-90,90))
-    bias=CF['rwDay']-CF['bmDay']
-    cm3=ax1[2].imshow(bias,vmin=-1,vmax=1,extent=(-180,180,-90,90),cmap=plt.cm.seismic)
-    ax1[0].set_title(rwDay_resu.split('/',-1)[-1])
-    ax1[1].set_title(bmDay_resu.split('/',-1)[-1])
-    ax1[2].set_title('Bias')
-    fig1.colorbar(cm1,ax=ax1[0])
-    fig1.colorbar(cm2,ax=ax1[1])
-    fig1.colorbar(cm3,ax=ax1[2])
-    fig1.show()
+    fig1,fig1_ttl=doPlot(CF['bmDay'],CF['rwDay'],rwDay_resu.split('/',-1)[-1])
+
     
 #    fig2,ax2=plt.subplots()
 #    fig2.suptitle('ZZ_SV_comparison')
