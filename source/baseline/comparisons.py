@@ -39,6 +39,8 @@ def doPlot(results,benchmark,fig_ttl):
     fig1.colorbar(cm2,ax=ax1[1])
     fig1.colorbar(cm3,ax=ax1[2])
     fig1.show()
+    print('Maximum absolute bias:%0.4f'%(np.nanmax(np.absolute(bias))))
+    print('Minimum absolute bias:%0.4f'%(np.nanmin(np.absolute(bias))))
     return fig1,fig_ttl
 if __name__=='__main__':
     sv_results="/umbc/xfs1/jianwu/common/MODIS_Aggregation/output_final2.hdf5"
