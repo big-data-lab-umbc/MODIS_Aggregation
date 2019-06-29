@@ -19,7 +19,7 @@ def readData(file):
     la=f['lon_bnd'][:]
     f.close()
     return CF,lo,la
-def doPlot(results,benchmark,fig_ttl):
+def doPlot(results,benchmark,fig_ttl,vmin=-1,vmax=1,bty=None):
     '''
     results,benchmark:180*360 array
     '''
@@ -30,11 +30,16 @@ def doPlot(results,benchmark,fig_ttl):
     fig1.suptitle(fig_ttl)
     cm1=ax1[0].imshow(X['rwDay'],extent=(-180,180,-90,90))
     cm2=ax1[1].imshow(X['bmDay'],extent=(-180,180,-90,90))
-    bias=X['rwDay']-X['bmDay']
-    cm3=ax1[2].imshow(bias,vmin=-1,vmax=1,extent=(-180,180,-90,90),cmap=plt.cm.seismic)
+    if bty is None:
+        bias=X['rwDay']-X['bmDay']
+        ax1[2].set_title('Bias')
+    elif bty=='relative':
+        bias=(X['rwDay']-X['bmDay'])/X['bmDay']
+        ax1[2].set_title('Relative bias')
+    cm3=ax1[2].imshow(bias,vmin=vmin,vmax=vmax,extent=(-180,180,-90,90),cmap=plt.cm.seismic)
     ax1[0].set_title('Results')
     ax1[1].set_title('Benchmark')
-    ax1[2].set_title('Bias')
+    
     fig1.colorbar(cm1,ax=ax1[0])
     fig1.colorbar(cm2,ax=ax1[1])
     fig1.colorbar(cm3,ax=ax1[2])
