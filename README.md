@@ -14,8 +14,8 @@ The code is tested with Python 3.7
 - Developer: Gala Wind, NASA Goddard Space Flight Center
 - Developer: Paul Hubanks, NASA Goddard Space Flight Center
 - PhD student: Chamara Rajapakshe, Department of Physics, UMBC
-- PhD student: Pei Guo, Department of Physics, UMBC
-- PhD student: Redwan Walid, Department of Physics, UMBC
+- PhD student: Pei Guo, Department of Information Systems, UMBC
+- PhD student: Redwan Walid, Department of Information Systems, UMBC
 - MS student: Savio Key, Department of Information Systems, UMBC
 - MS student: Deepak Prakash, Department of Information Systems, UMBC
 
