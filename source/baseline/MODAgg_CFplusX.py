@@ -4,6 +4,8 @@
 Created on Sun May  16 17:16:55 2017
 
 @author: zhibo
+------------------------------------------
+Deom. version to aggregate CF and one additional variable.
 """
 from __future__ import division, print_function
 import numpy as np
