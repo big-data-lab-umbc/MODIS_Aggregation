@@ -37,6 +37,34 @@ def read_MODIS_level2_dataV2(MYD06_file,MYD03_file):
     longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
     data={'CM':CM,'CTP':CTP,'CTT':CTT,'CTH':CTH}
     return latitude,longitude,data
+def save_hdfCFplusX(out_name,total_cloud_fraction,lat_bnd,lon_bnd,X=None,Xname=None,Xunit=None):
+    '''
+    To save single additional variable with CF.
+    X=numpy.array
+    Xname=('short_name','long_name')
+    '''
+    f=h5py.File(out_name,'w')
+    PCentry=f.create_dataset('CF',data=total_cloud_fraction)
+    PCentry.dims[0].label='lat_bnd'
+    PCentry.dims[1].label='lon_bnd'
+    PCentry.attrs['units']='Fraction'
+    PCentry.attrs["long_name"]='Cloud_Fraction'
+    if X is not None and Xname is not None and Xunit is not None:
+        PCentry=f.create_dataset(Xname[0],data=X)
+        PCentry.dims[0].label='lat_bnd'
+        PCentry.dims[1].label='lon_bnd'
+        PCentry.attrs['units']=Xunit
+        PCentry.attrs['long_name']=Xname[1]
+    PC=f.create_dataset('lat_bnd',data=lat_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Latitude_boundaries'    
+    
+    PC=f.create_dataset('lon_bnd',data=lon_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Longitude_boundaries'    
+    f.close()
+    print(out_name+' Saved!!')            
+
 def save_hdf(out_name,total_cloud_fraction,mean,lat_bnd,lon_bnd):
     f=h5py.File(out_name,'w')
     PCentry=f.create_dataset('CF',data=total_cloud_fraction)
