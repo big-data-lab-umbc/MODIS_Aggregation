@@ -37,11 +37,29 @@ def read_MODIS_level2_dataV2(MYD06_file,MYD03_file):
     longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
     data={'CM':CM,'CTP':CTP,'CTT':CTT,'CTH':CTH}
     return latitude,longitude,data
-def save_hdfCFplusX(out_name,total_cloud_fraction,lat_bnd,lon_bnd,X=None,Xname=None,Xunit=None):
+def read_MODIS_CFplusX(MYD06_file,MYD03_file,Xname=None):
+    '''
+    Xname=('short_name','long_name','units')
+    '''
+    #Reading variables from MYD06
+    
+    myd06 = Dataset(MYD06_file, "r")
+    CM1km  = readEntry('Cloud_Mask_1km',myd06)             #Cloud mask
+    CM     = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
+    if Xname is not None:
+        Xdata = readEntry(Xname[1],myd06)     #Cloud Top Pressure (hPa)
+    myd03 = Dataset(MYD03_file, "r")
+    latitude = myd03.variables["Latitude"][:,:] # Reading Specific Variable 'Latitude'.
+    latitude = np.array(latitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
+    longitude = myd03.variables["Longitude"][:,:] # Reading Specific Variable 'Longitude'.
+    longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
+    data={'CM':CM,Xname[0]:Xdata}
+    return latitude,longitude,data
+def save_hdfCFplusX(out_name,total_cloud_fraction,lat_bnd,lon_bnd,X=None,Xname=None):
     '''
     To save single additional variable with CF.
     X=numpy.array
-    Xname=('short_name','long_name')
+    Xname=('short_name','long_name','units')
     '''
     f=h5py.File(out_name,'w')
     PCentry=f.create_dataset('CF',data=total_cloud_fraction)
@@ -53,7 +71,7 @@ def save_hdfCFplusX(out_name,total_cloud_fraction,lat_bnd,lon_bnd,X=None,Xname=N
         PCentry=f.create_dataset(Xname[0],data=X)
         PCentry.dims[0].label='lat_bnd'
         PCentry.dims[1].label='lon_bnd'
-        PCentry.attrs['units']=Xunit
+        PCentry.attrs['units']=Xname[2]
         PCentry.attrs['long_name']=Xname[1]
     PC=f.create_dataset('lat_bnd',data=lat_bnd)
     PC.attrs['units']='degrees'
