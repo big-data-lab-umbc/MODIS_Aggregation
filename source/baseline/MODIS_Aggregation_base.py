@@ -112,6 +112,7 @@ if __name__=='__main__':
 #        CTT = ('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
 #        CTH = ('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
     variables={'CTP':('cloud_top_pressure_1km','hPa'),'CTT':('cloud_top_temperature_1km','K')}
+    stats = ['mean', 'max']
     MOD03_path='/home/cpnhere/cmac/input-data/MYD03/'
     MOD06_path='/home/cpnhere/cmac/input-data/MYD06/'
     
@@ -128,10 +129,16 @@ if __name__=='__main__':
 
     TOT_pix      = np.zeros(nlat*nlon)#To compute CF 
     CLD_pix      = np.zeros(nlat*nlon)#Will be needed for all others including CF
+    
+    #To handle the other variables and statistics
     XXX_pix={}
     for key in variables:
         XXX_pix[key]=np.zeros(nlat*nlon)
-    mean = {}
+    mean = {} # onley mean
+    stt = {} # to handle multiple stats. (not completed)
+    for st in stats:
+        stt[st]={}
+    #-----------------------------------------------
     tot_F=0 #Total number of file couples read
     start=time.time()
     MD=MODIS_Level2(variables)
@@ -168,10 +175,12 @@ if __name__=='__main__':
                 for i in np.arange(latlon_index_unique.size):
                     j=latlon_index_unique[i]
                     TOT_pix[j] = TOT_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]>=0)
-                    CLD_pix[j] = CLD_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]<=1) 
+                    CLD_pix[j] = CLD_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]<=1)
+                    #To calculate other variables and statistics---------------------------
                     for key in data:
                         if key!='CM':
                             XXX_pix[key][j]=XXX_pix[key][j]+np.sum(data[key][np.where(latlon_index == j)])
+                    #-------------------------------------------------------------------
 #                    CTP_pix[j] = CTP_pix[j]+np.sum(CTP[np.where(latlon_index == j)])
 #                    CTT_pix[j] = CTT_pix[j]+np.sum(CTT[np.where(latlon_index == j)])
 #                    CTH_pix[j] = CTH_pix[j]+np.sum(CTH[np.where(latlon_index == j)])
@@ -182,3 +191,8 @@ if __name__=='__main__':
     for key in data:
         if key!='CM':
             mean[key]=division(XXX_pix[key],CLD_pix).reshape([nlat,nlon])
+            
+#    from comparisons import doPlot, readData
+#    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
+#    CF_BMK,_,_=readData(benchmark_p+"MODAgg_3var_parMonth_20080101.hdf5")
+#    fig1,fig1_ttl=doPlot(total_cloud_fraction,CF_BMK,'Comparison')
