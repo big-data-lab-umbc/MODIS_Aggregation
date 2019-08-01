@@ -103,6 +103,7 @@ class MODIS_Level2(object):
         longitude = myd03.variables["Longitude"][:,:] # Reading Specific Variable 'Longitude'.
         longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
         return latitude,longitude,data
+            
 
 if __name__=='__main__':
     mode='test'# Only 3 files
@@ -130,14 +131,86 @@ if __name__=='__main__':
     TOT_pix      = np.zeros(nlat*nlon)#To compute CF 
     CLD_pix      = np.zeros(nlat*nlon)#Will be needed for all others including CF
     
-    #To handle the other variables and statistics
+    '''
+    Initializations (Both variables function for multiple statistics)
+    ***************************************************************************
+    '''
+    #mean and stdd
     XXX_pix={}
     for key in variables:
         XXX_pix[key]=np.zeros(nlat*nlon)
-    mean = {} # onley mean
-    stt = {} # to handle multiple stats. (not completed)
-    for st in stats:
-        stt[st]={}
+    XXX_pixSq=XXX_pix # For Stdd
+    #Initialization of mnx(for min max) 
+    mnx={}
+    if 'min' in stats:
+        mnx['min']={}
+        for key in variables:
+            mnx['min'][key]=np.zeros(nlat*nlon)+np.inf
+    if 'max' in stats:
+        mnx['max']={}
+        for key in variables:
+            mnx['max'][key]=np.zeros(nlat*nlon)-np.inf
+    # To handle min and max
+    if not(bool(mnx)):
+        #No min or max are needed
+        def minmax(val,j):
+            pass
+    elif len(mnx)>1:
+        #Both min and max are needed
+        def minmax(val,j):
+            mn,mx=val.min(),val.max()
+            if mn<mnx['min'][key][j]:
+                mnx['min'][key][j]=mn
+            if mx>mnx['max'][key][j]:
+                mnx['max'][key][j]=mx
+    elif 'min' in mnx:
+        def minmax(val,j):
+            mn=val.min()
+            if mn<mnx['min'][key][j]:
+                mnx['min'][key][j]=mn
+    elif 'max' in mnx:
+        def minmax(val,j):
+            mx=val.max()
+            if mx>mnx['max'][key][j]:
+                mnx['max'][key]=mx
+            
+    # to handle multiple stats. (mean,std,min,max)
+    if 'stdd' in stats:
+        #if only stdd
+        stt={'mean','stdd'}# Mean is needed to calculate Std
+        def MeanStd(data,j,latlon_index):
+            #Both mean and stdd
+            for key in data:
+                if key!='CM':
+                    val=data[key][np.where(latlon_index == j)]
+                    XXX_pix[key][j]=XXX_pix[key][j]+np.sum(val)
+                    XXX_pixSq[key][j]=XXX_pixSq[key][j]+np.sum(val**2)   
+                    minmax(val,j)
+    elif 'mean' in stats:
+        #if only mean
+        stt={'mean'}
+        def MeanStd(data,j,latlon_index):
+            #Only mean
+            for key in data:
+                if key!='CM':
+                    val=data[key][np.where(latlon_index == j)]
+                    XXX_pix[key][j]=XXX_pix[key][j]+np.sum(val)  
+                    minmax(val,j)
+    elif len(mnx)>0:
+        #No mean,stdd but min or max
+        def MeanStd(data,j,latlon_index):
+            for key in data:
+                if key!='CM':
+                    val=data[key][np.where(latlon_index == j)]
+                    minmax(val,j)
+    else:
+        #if no any stats
+        def MeanStd(data,j,latlon_index):
+            pass
+    '''
+    Looping over files
+    ***************************************************************************
+    '''
     #-----------------------------------------------
     tot_F=0 #Total number of file couples read
     start=time.time()
@@ -177,9 +250,7 @@ if __name__=='__main__':
                     TOT_pix[j] = TOT_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]>=0)
                     CLD_pix[j] = CLD_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]<=1)
                     #To calculate other variables and statistics---------------------------
-                    for key in data:
-                        if key!='CM':
-                            XXX_pix[key][j]=XXX_pix[key][j]+np.sum(data[key][np.where(latlon_index == j)])
+                    MeanStd(data,j,latlon_index)
                     #-------------------------------------------------------------------
 #                    CTP_pix[j] = CTP_pix[j]+np.sum(CTP[np.where(latlon_index == j)])
 #                    CTT_pix[j] = CTT_pix[j]+np.sum(CTT[np.where(latlon_index == j)])
@@ -190,8 +261,12 @@ if __name__=='__main__':
     total_cloud_fraction  =  division(CLD_pix,TOT_pix).reshape([nlat,nlon])
     for key in data:
         if key!='CM':
-            mean[key]=division(XXX_pix[key],CLD_pix).reshape([nlat,nlon])
-            
+            for st in stt:
+                if st == 'mean':
+                    stt[st][key]=division(XXX_pix[key],CLD_pix).reshape([nlat,nlon])
+                if st == 'stdd':
+                    #stdd=np.sqrt(<Xi^2>-<X>)
+                    stt[st][key]=division(XXX_pixSq[key],CLD_pix).reshape([nlat,nlon])/stt[st][key]
 #    from comparisons import doPlot, readData
 #    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
 #    CF_BMK,_,_=readData(benchmark_p+"MODAgg_3var_parMonth_20080101.hdf5")
