@@ -113,7 +113,7 @@ if __name__=='__main__':
 #        CTT = ('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
 #        CTH = ('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
     variables={'CTP':('cloud_top_pressure_1km','hPa'),'CTT':('cloud_top_temperature_1km','K')}
-    stats = ['mean', 'max']
+    stats = ['mean', 'max','min']
     MOD03_path='/home/cpnhere/cmac/input-data/MYD03/'
     MOD06_path='/home/cpnhere/cmac/input-data/MYD06/'
     
@@ -141,13 +141,15 @@ if __name__=='__main__':
         XXX_pix[key]=np.zeros(nlat*nlon)
     XXX_pixSq=XXX_pix # For Stdd
     #Initialization of mnx(for min max) 
-    mnx={}
+    mnx={};stt={}
     if 'min' in stats:
         mnx['min']={}
+        stt['min']={}
         for key in variables:
             mnx['min'][key]=np.zeros(nlat*nlon)+np.inf
     if 'max' in stats:
         mnx['max']={}
+        stt['max']={}
         for key in variables:
             mnx['max'][key]=np.zeros(nlat*nlon)-np.inf
     # To handle min and max
@@ -172,12 +174,12 @@ if __name__=='__main__':
         def minmax(val,j):
             mx=val.max()
             if mx>mnx['max'][key][j]:
-                mnx['max'][key]=mx
+                mnx['max'][key][j]=mx
             
     # to handle multiple stats. (mean,std,min,max)
     if 'stdd' in stats:
         #if only stdd
-        stt={'mean','stdd'}# Mean is needed to calculate Std
+        stt['mean'],stt['stdd']={},{}# Mean is needed to calculate Std
         def MeanStd(data,j,latlon_index):
             #Both mean and stdd
             for key in data:
@@ -188,7 +190,7 @@ if __name__=='__main__':
                     minmax(val,j)
     elif 'mean' in stats:
         #if only mean
-        stt={'mean'}
+        stt['mean']={}
         def MeanStd(data,j,latlon_index):
             #Only mean
             for key in data:
@@ -252,13 +254,11 @@ if __name__=='__main__':
                     #To calculate other variables and statistics---------------------------
                     MeanStd(data,j,latlon_index)
                     #-------------------------------------------------------------------
-#                    CTP_pix[j] = CTP_pix[j]+np.sum(CTP[np.where(latlon_index == j)])
-#                    CTT_pix[j] = CTT_pix[j]+np.sum(CTT[np.where(latlon_index == j)])
-#                    CTH_pix[j] = CTH_pix[j]+np.sum(CTH[np.where(latlon_index == j)])
             granule_time += datetime.timedelta(minutes=5)
 
-    print('derive the averaged Level-3 cloud fraction')
+    #Cloud fractions
     total_cloud_fraction  =  division(CLD_pix,TOT_pix).reshape([nlat,nlon])
+    #The other statistics
     for key in data:
         if key!='CM':
             for st in stt:
@@ -267,6 +267,8 @@ if __name__=='__main__':
                 if st == 'stdd':
                     #stdd=np.sqrt(<Xi^2>-<X>)
                     stt[st][key]=division(XXX_pixSq[key],CLD_pix).reshape([nlat,nlon])/stt[st][key]
+                if st == 'min' or st == 'max':
+                    stt[st][key]=mnx[st][key]
 #    from comparisons import doPlot, readData
 #    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
 #    CF_BMK,_,_=readData(benchmark_p+"MODAgg_3var_parMonth_20080101.hdf5")
