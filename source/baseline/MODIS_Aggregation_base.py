@@ -215,7 +215,7 @@ if __name__=='__main__':
         def MeanStd(data,j,latlon_index,M):
             pass
     '''
-    Looping over files
+    Looping through files
     ***************************************************************************
     '''
     #-----------------------------------------------
