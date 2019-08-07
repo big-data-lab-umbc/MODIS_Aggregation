@@ -131,8 +131,11 @@ if __name__=='__main__':
     nlon = 360
 
     '''
-    Initializations (Both variables function for multiple statistics)
+    Initializations (Both variables and functions for multiple statistics)
     ***************************************************************************
+    Memory allocation and computations are only be done for the requested variables
+    (any combination of variables ex. CTP,CTT,COT,CER,etc.) and statistics
+    (any combination of min,max,mean,stdd).
     '''    
     M=Memory() # An empty object to store variables
     M.TOT_pix      = np.zeros(nlat*nlon)#To compute CF 
@@ -263,18 +266,23 @@ if __name__=='__main__':
 
     #Cloud fractions
     total_cloud_fraction  =  division(M.CLD_pix,M.TOT_pix).reshape([nlat,nlon])
+    pixel_count = M.CLD_pix.reshape([nlat,nlon])
     #The other statistics
     for key in data:
         if key!='CM':
             for st in M.stt:
                 if st == 'stdd':
-                    M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
+                    M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
                     #stdd=np.sqrt(<Xi^2>-<X>)
-                    M.stt[st][key]=division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])/M.stt[st][key]
+                    M.stt[st][key]=division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]
                 elif st == 'mean':
                     M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
                 if st == 'min' or st == 'max':
                     M.stt[st][key]=M.mnx[st][key]
+    '''
+    The final outputs are,
+        total_cloud_fraction, pixel_counts and M.stt
+    '''
 #    from comparisons import doPlot, readData
 #    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
 #    CF_BMK,_,_=readData(benchmark_p+"MODAgg_3var_parMonth_20080101.hdf5")
