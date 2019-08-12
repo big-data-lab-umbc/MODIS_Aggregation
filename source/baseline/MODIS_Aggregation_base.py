@@ -104,12 +104,28 @@ class MODIS_Level2(object):
         longitude = np.array(longitude).byteswap().newbyteorder() # Addressing Byteswap For Big Endian Error.
         return latitude,longitude,data
             
+class MODIS_L2toL3(object):
+    def __init__(self,variables,stats,start,l3product='D3'):
+        '''
+        variables (Dictionary): {'Acronym1':('Full_name1','units1'),...}
+        stats (String array): ['mean','stdd','min','max'] or any combination
+        start:
+            if l3product='D3' => Date ex. '01/01/2008'
+            [NOT IMPLEMENTED]if l3product='E3' => Starting date ex. '01/01/2008' (eight day from the given date will considered)
+            [NOT IMPLEMENTED]if l3product='Me' => Month ex. '01/2008'
+        l3product (String): 'D3','E3','M3' for daily, eight-day and monthly
+        '''
+        self.variables=variables
+        self.stats=stats
+        self.start=start
+        self.l3product=l3product
+        
 class Memory: pass
 
 if __name__=='__main__':
     mode='test'# Only 3 files
     out_name='MODAgg_day_'+mode
-    date='01/01/2008'
+    start='01/01/2008'
 #        CTP = ('cloud_top_pressure_1km',myd06)     #Cloud Top Pressure (hPa)
 #        CTT = ('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
 #        CTH = ('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
@@ -119,7 +135,7 @@ if __name__=='__main__':
     MOD06_path='/home/cpnhere/cmac/input-data/MYD06/'
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
-    dt=date.split('/')
+    dt=start.split('/')
     yr = [int(dt[2])]
     mn = [int(dt[0])] #np.arange(1,13)  #[1]
     dy = [int(dt[1])] #np.arange(1,32) # [1] #np.arange(1,31)
@@ -283,6 +299,7 @@ if __name__=='__main__':
     The final outputs are,
         total_cloud_fraction, pixel_counts and M.stt
     '''
+    
 #    from comparisons import doPlot, readData
 #    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
 #    CF_BMK,_,_=readData(benchmark_p+"MODAgg_3var_parMonth_20080101.hdf5")
