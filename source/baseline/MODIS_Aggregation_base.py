@@ -113,6 +113,9 @@ class MODIS_Level2(object):
         return latitude,longitude,data
             
 class MODIS_L2toL3(object):
+    '''
+    Reads MODIS level-2 products and compute given statistics
+    '''
     def __init__(self,variables,stats,start,l3product='D3'):
         '''
         variables (Dictionary): {'Acronym1':('Full_name1','units1'),...}
@@ -314,6 +317,9 @@ if __name__=='__main__':
     #--------------------------------------------------------------------------
     Agg=MODIS_L2toL3(variables, stats,start)
     Agg.Aggregate(MOD03_path,MOD06_path,fname_ap=mode)
+    
+    #Ex. Agg.M.stt['min']['CTP']
+    #Ex. Agg.M.stt['mean']['CTT']
     
 #    from comparisons import doPlot, readData
 #    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
