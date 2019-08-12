@@ -78,6 +78,14 @@ def readEntry(key,ncf):
     scale=ncf.variables[key].getncattr('scale_factor')
     offst=ncf.variables[key].getncattr('add_offset')
     return (rdval+offst)*scale
+def day_of_year(yr,mn,dy):
+    '''
+    yr,mn,dy (int)
+    '''
+    JD01, JD02 = gcal2jd(yr,1,1)
+    JD1, JD2 = gcal2jd(yr,mn,dy)
+    JD = np.int((JD2+JD1)-(JD01+JD02) + 1)
+    return JD
 
 class MODIS_Level2(object):
     def __init__(self,variables):
@@ -119,6 +127,176 @@ class MODIS_L2toL3(object):
         self.stats=stats
         self.start=start
         self.l3product=l3product
+    def Aggregate(self,MOD03_path,MOD06_path,fname_ap=None):
+        '''
+        - Defines self.l3name: level-3 output file name.
+        - Defines self.M (Object) which contains all the computed statistics and variables. 
+        fname_ap (string): 'a_string_to_append_to_the_L3_output_file'
+        '''
+        dt=self.start.split('/')
+        yr = [int(dt[2])]
+        mn = [int(dt[0])] #np.arange(1,13)  #[1]
+        dy = [int(dt[1])] #np.arange(1,32) # [1] #np.arange(1,31)
+        # latitude and longtitude boundaries of level-3 grid
+        if fname_ap is None:
+            self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))
+        else:
+            self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))+fname_ap
+        lat_bnd = np.arange(-90,91,1)
+        lon_bnd = np.arange(-180,180,1)
+        nlat = 180
+        nlon = 360
+    
+        '''
+        Initializations (Both variables and functions for multiple statistics)
+        ***************************************************************************
+        Memory allocation and computations are only be done for the requested variables
+        (any combination of variables ex. CTP,CTT,COT,CER,etc.) and statistics
+        (any combination of min,max,mean,stdd).
+        '''    
+        M=Memory() # An empty object to store variables
+        M.TOT_pix      = np.zeros(nlat*nlon)#To compute CF 
+        M.CLD_pix      = np.zeros(nlat*nlon)#Will be needed for all others including CF
+        
+        #mean and stdd (Initialization)
+        M.XXX_pix={}
+        for key in self.variables:
+            M.XXX_pix[key]=np.zeros(nlat*nlon)
+        M.XXX_pixSq=M.XXX_pix # For Stdd
+        #Min and Max (Initialization) 
+        M.mnx={};M.stt={}
+        if 'min' in self.stats:
+            M.mnx['min']={}
+            M.stt['min']={}
+            for key in self.variables:
+                M.mnx['min'][key]=np.zeros(nlat*nlon)+np.inf
+        if 'max' in self.stats:
+            M.mnx['max']={}
+            M.stt['max']={}
+            for key in self.variables:
+                M.mnx['max'][key]=np.zeros(nlat*nlon)-np.inf
+        # Min and Max computations
+        if not(bool(M.mnx)):
+            #No min or max are needed
+            def minmax(val,j,M):
+                pass
+        elif len(M.mnx)>1:
+            #Both min and max are needed
+            def minmax(val,j,M):
+                mn,mx=val.min(),val.max()
+                if mn<M.mnx['min'][key][j]:
+                    M.mnx['min'][key][j]=mn
+                if mx>M.mnx['max'][key][j]:
+                    M.mnx['max'][key][j]=mx
+        elif 'min' in M.mnx:
+            #Only min
+            def minmax(val,j,M):
+                mn=val.min()
+                if mn<M.mnx['min'][key][j]:
+                    M.mnx['min'][key][j]=mn
+        elif 'max' in M.mnx:
+            #Only max
+            def minmax(val,j,M):
+                mx=val.max()
+                if mx>M.mnx['max'][key][j]:
+                    M.mnx['max'][key][j]=mx
+                
+        # Min, max, mean and stdd computations
+        if 'stdd' in self.stats:
+            #if only stdd
+            M.stt['mean'],M.stt['stdd']={},{}# Mean is needed to calculate Std
+            def MeanStd(data,j,latlon_index,M):
+                #Both mean and stdd
+                for key in data:
+                    if key!='CM':
+                        val=data[key][np.where(latlon_index == j)]
+                        M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)
+                        M.XXX_pixSq[key][j]=M.XXX_pixSq[key][j]+np.sum(val**2)   
+                        minmax(val,j,M)
+        elif 'mean' in self.stats:
+            #if only mean
+            M.stt['mean']={}
+            def MeanStd(data,j,latlon_index,M):
+                #Only mean
+                for key in data:
+                    if key!='CM':
+                        val=data[key][np.where(latlon_index == j)]
+                        M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)  
+                        minmax(val,j,M)
+        elif len(M.mnx)>0:
+            #No mean,stdd but min or max
+            def MeanStd(data,j,latlon_index,M):
+                for key in data:
+                    if key!='CM':
+                        val=data[key][np.where(latlon_index == j)]
+                        minmax(val,j,M)
+        else:
+            #if no any stats
+            def MeanStd(data,j,latlon_index,M):
+                pass
+        '''
+        Looping through files
+        ***************************************************************************
+        '''
+        #-----------------------------------------------
+        tot_F=0 #Total number of file couples read
+        self.start=time.time()
+        MD=MODIS_Level2(self.variables)
+        for y,m,d in  itertools.product(yr,mn, dy):
+            #-------------find the MODIS prodcts--------------#
+            #date = datetime.datetime(y,m,d)
+            JD01, JD02 = gcal2jd(y,1,1)
+            JD1, JD2 = gcal2jd(y,m,d)
+            JD = np.int((JD2+JD1)-(JD01+JD02) + 1)
+            granule_time = datetime.datetime(y,m,d,0,0)
+            while granule_time <= datetime.datetime(y,m,d,23,55):  # 23,55
+    #            print('granule time:',granule_time)
+                MOD03_fp = 'MYD03.A{:04d}{:03d}.{:02d}{:02d}.006.?????????????.hdf'.format(y,JD,granule_time.hour,granule_time.minute)
+                MOD06_fp = 'MYD06_L2.A{:04d}{:03d}.{:02d}{:02d}.006.?????????????.hdf'.format(y,JD,granule_time.hour,granule_time.minute)
+                MOD03_fn, MOD06_fn =[],[]
+                for MOD06_flist in  os.listdir(MOD06_path):
+                    if fnmatch.fnmatch(MOD06_flist, MOD06_fp):
+                        MOD06_fn = MOD06_flist
+                for MOD03_flist in  os.listdir(MOD03_path):
+                    if fnmatch.fnmatch(MOD03_flist, MOD03_fp):
+                        MOD03_fn = MOD03_flist
+                if MOD03_fn and MOD06_fn: # if both MOD06 and MOD03 products are in the directory
+                    tot_F+=1
+                    Lat,Lon,data = MD.readHDF(MOD03_path+MOD03_fn,MOD06_path+MOD06_fn)
+                    for key in data:
+                        data[key]=data[key].ravel()    
+                    Lat=Lat.ravel()
+                    Lon=Lon.ravel()
+                    lat_index = value_locate(lat_bnd,Lat)
+                    lon_index = value_locate(lon_bnd,Lon)
+                    latlon_index = lat_index*nlon + lon_index
+                    latlon_index_unique = np.unique(latlon_index)
+                    
+                    for i in np.arange(latlon_index_unique.size):
+                        j=latlon_index_unique[i]
+                        M.TOT_pix[j] = M.TOT_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]>=0)
+                        M.CLD_pix[j] = M.CLD_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]<=1)
+                        #To calculate other variables and statistics---------------------------
+                        MeanStd(data,j,latlon_index,M)
+                        #-------------------------------------------------------------------
+                granule_time += datetime.timedelta(minutes=5)
+    
+        #Cloud fractions
+        M.total_cloud_fraction  =  division(M.CLD_pix,M.TOT_pix).reshape([nlat,nlon])
+        M.pixel_count = M.CLD_pix.reshape([nlat,nlon])
+        #The other statistics
+        for key in data:
+            if key!='CM':
+                for st in M.stt:
+                    if st == 'stdd':
+                        M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
+                        #stdd=np.sqrt(<Xi^2>-<X>)
+                        M.stt[st][key]=division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]
+                    elif st == 'mean':
+                        M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
+                    if st == 'min' or st == 'max':
+                        M.stt[st][key]=M.mnx[st][key]
+        self.M=M
         
 class Memory: pass
 
@@ -134,171 +312,8 @@ if __name__=='__main__':
     MOD03_path='/home/cpnhere/cmac/input-data/MYD03/'
     MOD06_path='/home/cpnhere/cmac/input-data/MYD06/'
     #--------------------------------------------------------------------------
-    #--------------------------------------------------------------------------
-    dt=start.split('/')
-    yr = [int(dt[2])]
-    mn = [int(dt[0])] #np.arange(1,13)  #[1]
-    dy = [int(dt[1])] #np.arange(1,32) # [1] #np.arange(1,31)
-    # latitude and longtitude boundaries of level-3 grid
-    out_name=out_name+"%d%02d%02d.hdf5"%(yr[0],mn[0],dy[0])
-    lat_bnd = np.arange(-90,91,1)
-    lon_bnd = np.arange(-180,180,1)
-    nlat = 180
-    nlon = 360
-
-    '''
-    Initializations (Both variables and functions for multiple statistics)
-    ***************************************************************************
-    Memory allocation and computations are only be done for the requested variables
-    (any combination of variables ex. CTP,CTT,COT,CER,etc.) and statistics
-    (any combination of min,max,mean,stdd).
-    '''    
-    M=Memory() # An empty object to store variables
-    M.TOT_pix      = np.zeros(nlat*nlon)#To compute CF 
-    M.CLD_pix      = np.zeros(nlat*nlon)#Will be needed for all others including CF
-    
-    #mean and stdd (Initialization)
-    M.XXX_pix={}
-    for key in variables:
-        M.XXX_pix[key]=np.zeros(nlat*nlon)
-    M.XXX_pixSq=M.XXX_pix # For Stdd
-    #Min and Max (Initialization) 
-    M.mnx={};M.stt={}
-    if 'min' in stats:
-        M.mnx['min']={}
-        M.stt['min']={}
-        for key in variables:
-            M.mnx['min'][key]=np.zeros(nlat*nlon)+np.inf
-    if 'max' in stats:
-        M.mnx['max']={}
-        M.stt['max']={}
-        for key in variables:
-            M.mnx['max'][key]=np.zeros(nlat*nlon)-np.inf
-    # Min and Max computations
-    if not(bool(M.mnx)):
-        #No min or max are needed
-        def minmax(val,j,M):
-            pass
-    elif len(M.mnx)>1:
-        #Both min and max are needed
-        def minmax(val,j,M):
-            mn,mx=val.min(),val.max()
-            if mn<M.mnx['min'][key][j]:
-                M.mnx['min'][key][j]=mn
-            if mx>M.mnx['max'][key][j]:
-                M.mnx['max'][key][j]=mx
-    elif 'min' in M.mnx:
-        #Only min
-        def minmax(val,j,M):
-            mn=val.min()
-            if mn<M.mnx['min'][key][j]:
-                M.mnx['min'][key][j]=mn
-    elif 'max' in M.mnx:
-        #Only max
-        def minmax(val,j,M):
-            mx=val.max()
-            if mx>M.mnx['max'][key][j]:
-                M.mnx['max'][key][j]=mx
-            
-    # Min, max, mean and stdd computations
-    if 'stdd' in stats:
-        #if only stdd
-        M.stt['mean'],M.stt['stdd']={},{}# Mean is needed to calculate Std
-        def MeanStd(data,j,latlon_index,M):
-            #Both mean and stdd
-            for key in data:
-                if key!='CM':
-                    val=data[key][np.where(latlon_index == j)]
-                    M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)
-                    M.XXX_pixSq[key][j]=M.XXX_pixSq[key][j]+np.sum(val**2)   
-                    minmax(val,j,M)
-    elif 'mean' in stats:
-        #if only mean
-        M.stt['mean']={}
-        def MeanStd(data,j,latlon_index,M):
-            #Only mean
-            for key in data:
-                if key!='CM':
-                    val=data[key][np.where(latlon_index == j)]
-                    M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)  
-                    minmax(val,j,M)
-    elif len(M.mnx)>0:
-        #No mean,stdd but min or max
-        def MeanStd(data,j,latlon_index,M):
-            for key in data:
-                if key!='CM':
-                    val=data[key][np.where(latlon_index == j)]
-                    minmax(val,j,M)
-    else:
-        #if no any stats
-        def MeanStd(data,j,latlon_index,M):
-            pass
-    '''
-    Looping through files
-    ***************************************************************************
-    '''
-    #-----------------------------------------------
-    tot_F=0 #Total number of file couples read
-    start=time.time()
-    MD=MODIS_Level2(variables)
-    for y,m,d in  itertools.product(yr,mn, dy):
-        #-------------find the MODIS prodcts--------------#
-        date = datetime.datetime(y,m,d)
-        JD01, JD02 = gcal2jd(y,1,1)
-        JD1, JD2 = gcal2jd(y,m,d)
-        JD = np.int((JD2+JD1)-(JD01+JD02) + 1)
-        granule_time = datetime.datetime(y,m,d,0,0)
-        while granule_time <= datetime.datetime(y,m,d,23,55):  # 23,55
-#            print('granule time:',granule_time)
-            MOD03_fp = 'MYD03.A{:04d}{:03d}.{:02d}{:02d}.006.?????????????.hdf'.format(y,JD,granule_time.hour,granule_time.minute)
-            MOD06_fp = 'MYD06_L2.A{:04d}{:03d}.{:02d}{:02d}.006.?????????????.hdf'.format(y,JD,granule_time.hour,granule_time.minute)
-            MOD03_fn, MOD06_fn =[],[]
-            for MOD06_flist in  os.listdir(MOD06_path):
-                if fnmatch.fnmatch(MOD06_flist, MOD06_fp):
-                    MOD06_fn = MOD06_flist
-            for MOD03_flist in  os.listdir(MOD03_path):
-                if fnmatch.fnmatch(MOD03_flist, MOD03_fp):
-                    MOD03_fn = MOD03_flist
-            if MOD03_fn and MOD06_fn: # if both MOD06 and MOD03 products are in the directory
-                tot_F+=1
-                Lat,Lon,data = MD.readHDF(MOD03_path+MOD03_fn,MOD06_path+MOD06_fn)
-                for key in data:
-                    data[key]=data[key].ravel()    
-                Lat=Lat.ravel()
-                Lon=Lon.ravel()
-                lat_index = value_locate(lat_bnd,Lat)
-                lon_index = value_locate(lon_bnd,Lon)
-                latlon_index = lat_index*nlon + lon_index
-                latlon_index_unique = np.unique(latlon_index)
-                
-                for i in np.arange(latlon_index_unique.size):
-                    j=latlon_index_unique[i]
-                    M.TOT_pix[j] = M.TOT_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]>=0)
-                    M.CLD_pix[j] = M.CLD_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]<=1)
-                    #To calculate other variables and statistics---------------------------
-                    MeanStd(data,j,latlon_index,M)
-                    #-------------------------------------------------------------------
-            granule_time += datetime.timedelta(minutes=5)
-
-    #Cloud fractions
-    total_cloud_fraction  =  division(M.CLD_pix,M.TOT_pix).reshape([nlat,nlon])
-    pixel_count = M.CLD_pix.reshape([nlat,nlon])
-    #The other statistics
-    for key in data:
-        if key!='CM':
-            for st in M.stt:
-                if st == 'stdd':
-                    M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
-                    #stdd=np.sqrt(<Xi^2>-<X>)
-                    M.stt[st][key]=division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]
-                elif st == 'mean':
-                    M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
-                if st == 'min' or st == 'max':
-                    M.stt[st][key]=M.mnx[st][key]
-    '''
-    The final outputs are,
-        total_cloud_fraction, pixel_counts and M.stt
-    '''
+    Agg=MODIS_L2toL3(variables, stats,start)
+    Agg.Aggregate(MOD03_path,MOD06_path,fname_ap=mode)
     
 #    from comparisons import doPlot, readData
 #    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
