@@ -293,8 +293,8 @@ class MODIS_L2toL3(object):
                 for st in M.stt:
                     if st == 'stdd':
                         M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
-                        #stdd=np.sqrt(<Xi^2>-<X>)
-                        M.stt[st][key]=division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]
+                        #stdd=np.sqrt(<Xi^2>-<X>^2)
+                        M.stt[st][key]=np.sqrt(division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]**2)
                     elif st == 'mean':
                         M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
                     if st == 'min' or st == 'max':
