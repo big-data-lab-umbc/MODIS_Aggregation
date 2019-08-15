@@ -15,6 +15,7 @@ from netCDF4 import Dataset
 from jdcal import gcal2jd
 import numpy as np
 import time,itertools,datetime,os,sys,fnmatch
+import h5py
 
 def value_locate(refx, x):
     """
@@ -302,6 +303,56 @@ class MODIS_L2toL3(object):
         self.M=M
         
 class Memory: pass
+class MODIS_level3(object):
+    '''
+    To handle MODIS level3 data.
+    Reading real MODIS level3 data will be implemented later.
+    '''
+    def __init__(self,Agg=None):
+        '''
+        Agg: MODIS_L2toL3 object
+        '''
+        if Agg is not None:
+            self.save_level3_hdf5()
+    def save_level3_hdf5(self,Agg):
+        '''
+        Agg: MODIS_L2toL3 object
+        '''
+        self.MODIS_L2toL3=Agg
+        self.fname=Agg.l3product
+        f=h5py.File(self.fname+'hdf5','w')
+        self.addGridEntry(f,'CF','Fraction','Cloud_Fraction',Agg.M.total_cloud_fraction)
+        self.addGridEntry(f,'PC','Count','Pixel_Count',Agg.M.pixel_count)
+        for key in Agg.variables:
+            for st in Agg.M.stt:
+                self.addGridEntry(f, key+'_'+st, Agg.variables[key][1], Agg.variables[key][0]+'_'+self.get_long_name(st), \
+                                  Agg.M.stt[st][key])
+        PC=f.create_dataset('lat_bnd',data=lat_bnd)
+        PC.attrs['units']='degrees'
+        PC.attrs['long_name']='Latitude_boundaries'    
+
+    PC=f.create_dataset('lon_bnd',data=lon_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Longitude_boundaries'    
+    f.close()
+                    
+    def get_long_name(st):
+        listt={'min':'Minimum','max':'Maximum','mean':'Mean','stdd':'Standard_Deviation'}
+        return listt[st]
+
+    def addGridEntry(f,name,units,long_name,data):
+        '''
+        f:h5py.File()
+        -------------------------------------
+        Ex.
+        self.addGridEntry(f,'CF','Fraction','Cloud_Fraction',total_cloud_fraction)
+        '''
+        PCentry=f.create_dataset(name,data=data)
+        PCentry.dims[0].label='lat_bnd'
+        PCentry.dims[1].label='lon_bnd'
+        PCentry.attrs['units']=units
+        PCentry.attrs["long_name"]=long_name
+
 
 if __name__=='__main__':
     mode='test'# Only 3 files
