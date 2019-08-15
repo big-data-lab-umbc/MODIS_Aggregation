@@ -299,8 +299,10 @@ class MODIS_L2toL3(object):
                     elif st == 'mean':
                         M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
                     if st == 'min' or st == 'max':
-                        M.stt[st][key]=M.mnx[st][key]
+                        M.stt[st][key]=M.mnx[st][key].reshape([nlat,nlon])
         self.M=M
+        self.lat_bnd=lat_bnd
+        self.lon_bnd=lon_bnd
         
 class Memory: pass
 class MODIS_level3(object):
@@ -308,39 +310,39 @@ class MODIS_level3(object):
     To handle MODIS level3 data.
     Reading real MODIS level3 data will be implemented later.
     '''
-    def __init__(self,Agg=None):
+    def __init__(self,):
         '''
-        Agg: MODIS_L2toL3 object
+        
         '''
-        if Agg is not None:
-            self.save_level3_hdf5()
+        self.note='Level2_to_level3_aggregated'
     def save_level3_hdf5(self,Agg):
         '''
         Agg: MODIS_L2toL3 object
         '''
         self.MODIS_L2toL3=Agg
-        self.fname=Agg.l3product
-        f=h5py.File(self.fname+'hdf5','w')
-        self.addGridEntry(f,'CF','Fraction','Cloud_Fraction',Agg.M.total_cloud_fraction)
-        self.addGridEntry(f,'PC','Count','Pixel_Count',Agg.M.pixel_count)
+        self.fname=Agg.l3name
+        ff=h5py.File(self.fname+'.hdf5','w')
+        self.addGridEntry(ff,'CF','Fraction','Cloud_Fraction',Agg.M.total_cloud_fraction)
+        self.addGridEntry(ff,'PC','Count','Pixel_Count',Agg.M.pixel_count)
         for key in Agg.variables:
             for st in Agg.M.stt:
-                self.addGridEntry(f, key+'_'+st, Agg.variables[key][1], Agg.variables[key][0]+'_'+self.get_long_name(st), \
+                self.addGridEntry(ff, key+'_'+st, Agg.variables[key][1], Agg.variables[key][0]+'_'+self.get_long_name(st), \
                                   Agg.M.stt[st][key])
-        PC=f.create_dataset('lat_bnd',data=lat_bnd)
+        PC=ff.create_dataset('lat_bnd',data=Agg.lat_bnd)
         PC.attrs['units']='degrees'
         PC.attrs['long_name']='Latitude_boundaries'    
 
-    PC=f.create_dataset('lon_bnd',data=lon_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Longitude_boundaries'    
-    f.close()
+        PC=ff.create_dataset('lon_bnd',data=Agg.lon_bnd)
+        PC.attrs['units']='degrees'
+        PC.attrs['long_name']='Longitude_boundaries'    
+        ff.close()
+        print(self.fname+'.hdf5 Saved!')
                     
-    def get_long_name(st):
+    def get_long_name(self,st):
         listt={'min':'Minimum','max':'Maximum','mean':'Mean','stdd':'Standard_Deviation'}
         return listt[st]
 
-    def addGridEntry(f,name,units,long_name,data):
+    def addGridEntry(self,f,name,units,long_name,data):
         '''
         f:h5py.File()
         -------------------------------------
@@ -355,20 +357,25 @@ class MODIS_level3(object):
 
 
 if __name__=='__main__':
-    mode='test'# Only 3 files
+    #mode='test'# Only 3 files
+    mode='.2Vars'# 2 variables. All the statistics
     out_name='MODAgg_day_'+mode
     start='01/01/2008'
 #        CTP = ('cloud_top_pressure_1km',myd06)     #Cloud Top Pressure (hPa)
 #        CTT = ('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
 #        CTH = ('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
     variables={'CTP':('cloud_top_pressure_1km','hPa'),'CTT':('cloud_top_temperature_1km','K')}
-    stats = ['mean', 'max', 'stdd']
-    MOD03_path='/home/cpnhere/cmac/input-data/MYD03/'
-    MOD06_path='/home/cpnhere/cmac/input-data/MYD06/'
+    stats = ['mean', 'max', 'stdd','min']
+    #MOD03_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD03/'
+    #MOD06_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD06/'
+    MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+    MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+
     #--------------------------------------------------------------------------
     Agg=MODIS_L2toL3(variables, stats,start)
     Agg.Aggregate(MOD03_path,MOD06_path,fname_ap=mode)
-    
+    L3=MODIS_level3()
+    L3.save_level3_hdf5(Agg)
     #Ex. Agg.M.stt['min']['CTP']
     #Ex. Agg.M.stt['mean']['CTT']
     
