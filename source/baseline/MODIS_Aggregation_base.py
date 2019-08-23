@@ -15,6 +15,7 @@ from netCDF4 import Dataset
 from jdcal import gcal2jd
 import numpy as np
 import time,itertools,datetime,os,sys,fnmatch
+import h5py
 
 def value_locate(refx, x):
     """
@@ -145,7 +146,7 @@ class MODIS_L2toL3(object):
             self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))
         else:
             self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))+fname_ap
-        lat_bnd = np.arange(-90,91,1)
+        lat_bnd = np.invert(np.arange(-90,91,1))
         lon_bnd = np.arange(-180,180,1)
         nlat = 180
         nlon = 360
@@ -293,31 +294,88 @@ class MODIS_L2toL3(object):
                 for st in M.stt:
                     if st == 'stdd':
                         M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
-                        #stdd=np.sqrt(<Xi^2>-<X>)
-                        M.stt[st][key]=division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]
+                        #stdd=np.sqrt(<Xi^2>-<X>^2)
+                        M.stt[st][key]=np.sqrt(division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]**2)
                     elif st == 'mean':
                         M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
                     if st == 'min' or st == 'max':
-                        M.stt[st][key]=M.mnx[st][key]
+                        M.stt[st][key]=M.mnx[st][key].reshape([nlat,nlon])
         self.M=M
+        self.lat_bnd=lat_bnd
+        self.lon_bnd=lon_bnd
         
 class Memory: pass
+class MODIS_level3(object):
+    '''
+    To handle MODIS level3 data.
+    Reading real MODIS level3 data will be implemented later.
+    '''
+    def __init__(self,):
+        '''
+        
+        '''
+        self.note='Level2_to_level3_aggregated'
+    def save_level3_hdf5(self,Agg):
+        '''
+        Agg: MODIS_L2toL3 object
+        '''
+        self.MODIS_L2toL3=Agg
+        self.fname=Agg.l3name
+        ff=h5py.File(self.fname+'.hdf5','w')
+        self.addGridEntry(ff,'CF','Fraction','Cloud_Fraction',Agg.M.total_cloud_fraction)
+        self.addGridEntry(ff,'PC','Count','Pixel_Count',Agg.M.pixel_count)
+        for key in Agg.variables:
+            for st in Agg.M.stt:
+                self.addGridEntry(ff, key+'_'+st, Agg.variables[key][1], Agg.variables[key][0]+'_'+self.get_long_name(st), \
+                                  Agg.M.stt[st][key])
+        PC=ff.create_dataset('lat_bnd',data=Agg.lat_bnd)
+        PC.attrs['units']='degrees'
+        PC.attrs['long_name']='Latitude_boundaries'    
+
+        PC=ff.create_dataset('lon_bnd',data=Agg.lon_bnd)
+        PC.attrs['units']='degrees'
+        PC.attrs['long_name']='Longitude_boundaries'    
+        ff.close()
+        print(self.fname+'.hdf5 Saved!')
+                    
+    def get_long_name(self,st):
+        listt={'min':'Minimum','max':'Maximum','mean':'Mean','stdd':'Standard_Deviation'}
+        return listt[st]
+
+    def addGridEntry(self,f,name,units,long_name,data):
+        '''
+        f:h5py.File()
+        -------------------------------------
+        Ex.
+        self.addGridEntry(f,'CF','Fraction','Cloud_Fraction',total_cloud_fraction)
+        '''
+        PCentry=f.create_dataset(name,data=data)
+        PCentry.dims[0].label='lat_bnd'
+        PCentry.dims[1].label='lon_bnd'
+        PCentry.attrs['units']=units
+        PCentry.attrs["long_name"]=long_name
+
 
 if __name__=='__main__':
-    mode='test'# Only 3 files
+    #mode='test'# Only 3 files
+    mode='.2Vars'# 2 variables. All the statistics
     out_name='MODAgg_day_'+mode
     start='01/01/2008'
 #        CTP = ('cloud_top_pressure_1km',myd06)     #Cloud Top Pressure (hPa)
 #        CTT = ('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
 #        CTH = ('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
     variables={'CTP':('cloud_top_pressure_1km','hPa'),'CTT':('cloud_top_temperature_1km','K')}
-    stats = ['mean', 'max', 'stdd']
-    MOD03_path='/home/cpnhere/cmac/input-data/MYD03/'
-    MOD06_path='/home/cpnhere/cmac/input-data/MYD06/'
+    stats = ['mean', 'max', 'stdd','min']
+    #MOD03_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD03/'
+    #MOD06_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD06/'
+    MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+    MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+
     #--------------------------------------------------------------------------
     Agg=MODIS_L2toL3(variables, stats,start)
     Agg.Aggregate(MOD03_path,MOD06_path,fname_ap=mode)
-    
+    L3=MODIS_level3()
+    L3.save_level3_hdf5(Agg)
     #Ex. Agg.M.stt['min']['CTP']
     #Ex. Agg.M.stt['mean']['CTT']
     
