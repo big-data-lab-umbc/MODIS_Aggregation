@@ -146,7 +146,7 @@ class MODIS_L2toL3(object):
             self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))
         else:
             self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))+fname_ap
-        lat_bnd = np.arange(-90,91,1)
+        lat_bnd = np.invert(np.arange(-90,91,1))
         lon_bnd = np.arange(-180,180,1)
         nlat = 180
         nlon = 360
