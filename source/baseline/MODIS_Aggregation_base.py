@@ -146,7 +146,7 @@ class MODIS_L2toL3(object):
             self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))
         else:
             self.l3name='MOD08_'+self.l3product+'A{:04d}{:03d}'.format(yr[0],day_of_year(yr[0],mn[0],dy[0]))+fname_ap
-        lat_bnd = np.invert(np.arange(-90,91,1))
+        lat_bnd = np.arange(-90,91,1)
         lon_bnd = np.arange(-180,180,1)
         nlat = 180
         nlon = 360
@@ -310,13 +310,23 @@ class MODIS_level3(object):
     To handle MODIS level3 data.
     Reading real MODIS level3 data will be implemented later.
     '''
-    def __init__(self,):
+    def __init__(self,filename=None,path=None):
         '''
-        
+        To save/read aggregated data.
+        To save:
+            filename,path=None; use self.save_level3_hdf5()
+        To read:
+            Give filename (and path) to the file.
+            Then use self.get()
         '''
         self.note='Level2_to_level3_aggregated'
+        if path is not None:
+            self.fn=path+filename
+        else:
+            self.fn=filename
     def save_level3_hdf5(self,Agg):
         '''
+        To save aggregated data products.
         Agg: MODIS_L2toL3 object
         '''
         self.MODIS_L2toL3=Agg
@@ -339,9 +349,21 @@ class MODIS_level3(object):
         print(self.fname+'.hdf5 Saved!')
                     
     def get_long_name(self,st):
+        '''
+        Returns long formal name of the statistc when the shorten form is given.
+        st (string): 'min', 'max', 'Mean', 'stdd'
+        '''
         listt={'min':'Minimum','max':'Maximum','mean':'Mean','stdd':'Standard_Deviation'}
         return listt[st]
-
+    def get_stat(self,var,stat):
+        '''
+        To read a statistic
+        '''
+        f=h5py.File(self.fn,'r')
+        val=f[var+'_'+stat][:]
+        f.close()
+        return val   
+                
     def addGridEntry(self,f,name,units,long_name,data):
         '''
         f:h5py.File()
