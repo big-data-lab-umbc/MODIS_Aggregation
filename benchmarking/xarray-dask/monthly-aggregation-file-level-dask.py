@@ -31,6 +31,7 @@ M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
 t0 = time.time()
 
+#return two 2D(180*360) array, one for cloud pixel count and the other for total pixel count.
 def aggregateOneFileData(x,y):
     
     total_pix = np.zeros((180, 360))
@@ -67,28 +68,29 @@ cloud_pix_global = np.zeros((180, 360))
 total_pix_global = np.zeros((180, 360))
 #finallist = np.zeros((180, 360))
 
-
+#add each aggregateOneFileData function call result (namely one day result) to final global 2D result
 for future, result in as_completed(tt, with_results= True):
     #print(result.shape)
     cloud_pix_global+=result[0]
     total_pix_global+=result[1]
 
-
+#calculate final cloud fraction using global 2D result
 total_pix_global[np.where(total_pix_global == 0)]=1.0
 cf = np.zeros((180, 360))
 cf = cloud_pix_global/total_pix_global
 
 client.close()
 
+#write output into an nc file
 cf1 = xr.DataArray(cf)
 cf1.to_netcdf("monthlyCloudFraction-file-level-parallelization.nc")
 
-
+#calculate execution time
 t1 = time.time()
 total = t1-t0
 print(total)
 
-
+#write output into a figure
 plt.figure(figsize=(14,7))
 plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
 plt.xlabel("Longitude", fontsize = 14)
