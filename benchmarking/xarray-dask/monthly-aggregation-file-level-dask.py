@@ -31,7 +31,7 @@ M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
 t0 = time.time()
 
-def f(x,y):
+def aggregateOneFileData(x,y):
     
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
@@ -60,7 +60,7 @@ def f(x,y):
         
     return cloud_pix, total_pix
 
-tt = client.map(f,M06_files,M03_files)
+tt = client.map(aggregateOneFileData, M06_files, M03_files)
 
 
 cloud_pix_global = np.zeros((180, 360))
