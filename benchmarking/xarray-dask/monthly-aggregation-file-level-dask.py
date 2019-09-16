@@ -65,6 +65,7 @@ def aggregateOneFileData(M06_file, M03_file):
     # covert ds06_decoded from 2D to 1D, check whether each element is less than or equal to 0, return a tuple whose first element is an 1D arrays of indices of ds06_decoded's elements whose value is less than or equal to 0.  
     index = np.nonzero(ds06_decoded.ravel() <= 0)
     # get its lat and lon for each cloud pixel.
+    # we can use this approach because the internal structure (677, 452) is the same for both MYD03 and MYD06.
     cloud_lon = [lon[i] for i in index[0]]
     cloud_lat = [lat[i] for i in index[0]]
      # increment cloud_pix by 1 for the grid for each value in (cloud_lat, cloud_lon).
