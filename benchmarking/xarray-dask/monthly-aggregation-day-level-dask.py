@@ -53,7 +53,7 @@ def aggregateOneDayData(z):
         for i, j in zip(lat, lon):
             total_pix[i, j] += 1
 
-        index = np.nonzero(ds06_decoded.ravel() <= 0)
+        index = np.nonzero(ds06_decoded.ravel() == 0)
 
         cloud_lon = [lon[i] for i in index[0]]
         cloud_lat = [lat[i] for i in index[0]]
