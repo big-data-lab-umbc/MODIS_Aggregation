@@ -1,28 +1,8 @@
-from dask.distributed import Client
-from dask.distributed import wait
-import dask
 import numpy as np
 import xarray as xr
 import glob
 import matplotlib.pyplot as plt
 import time
-from dask.distributed import as_completed
-
-
-var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 'SensorAzimuth', 
-            'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
-            'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
-            'SV start time', 'EV center time', 'Mirror side', 'SD Sun zenith', 'SD Sun azimuth',
-            'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
-            'impulse_enc', 'impulse_time', 'thermal_correction']
-
-M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
-M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
-M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
-M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
-
-t0 = time.time()
-
 
 def aggregateOneFileData(M06_file, M03_file):
     """Aggregate one file from MYD06_L2 and its corresponding file from MYD03. Read 'Cloud_Mask_1km' variable from the MYD06_L2 file, read 'Latitude' and 'Longitude' variables from the MYD03 file. Group Cloud_Mask_1km values based on their (lat, lon) grid.
@@ -33,6 +13,13 @@ def aggregateOneFileData(M06_file, M03_file):
 	Returns:
 		(cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
     """
+    
+    var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
+            'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
+            'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
+            'SV start time', 'EV center time', 'Mirror side', 'SD Sun zenith', 'SD Sun azimuth',
+            'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
+            'impulse_enc', 'impulse_time', 'thermal_correction', 'SensorAzimuth']
     
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
@@ -55,7 +42,7 @@ def aggregateOneFileData(M06_file, M03_file):
             total_pix[i,j] += 1
     
     # covert ds06_decoded from 2D to 1D, check whether each element is less than or equal to 0, return a tuple whose first element is an 1D arrays of indices of ds06_decoded's elements whose value is less than or equal to 0.  
-    index = np.nonzero(ds06_decoded.ravel() <= 0)
+    index = np.nonzero(ds06_decoded.ravel() == 0)
     # get its lat and lon for each cloud pixel.
     # we can use this approach because the internal structure (677, 452) is the same for both MYD03 and MYD06.
     cloud_lon = [lon[i] for i in index[0]]
@@ -65,35 +52,44 @@ def aggregateOneFileData(M06_file, M03_file):
         cloud_pix[x,y] += 1  
         
     return cloud_pix, total_pix
+    
+if __name__ == '__main__':
 
-cloud_pix_global = np.zeros((180, 360))
-total_pix_global = np.zeros((180, 360))
+    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
+    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
+
+    t0 = time.time()
+
+    cloud_pix_global = np.zeros((180, 360))
+    total_pix_global = np.zeros((180, 360))
 
 
-for M06_file, M03_file in zip (M06_files, M03_files):
-    one_day_result = aggregateOneFileData(M06_file, M03_file)
-    cloud_pix_global+=one_day_result[0]
-    total_pix_global+=one_day_result[1]
+    for M06_file, M03_file in zip (M06_files, M03_files):
+        one_day_result = aggregateOneFileData(M06_file, M03_file)
+        cloud_pix_global+=one_day_result[0]
+        total_pix_global+=one_day_result[1]
 
-#calculate final cloud fraction using global 2D result
-total_pix_global[np.where(total_pix_global == 0)]=1.0
-cf = np.zeros((180, 360))
-cf = cloud_pix_global/total_pix_global
+    #calculate final cloud fraction using global 2D result
+    total_pix_global[np.where(total_pix_global == 0)]=1.0
+    cf = np.zeros((180, 360))
+    cf = cloud_pix_global/total_pix_global
 
-#write output into an nc file
-cf1 = xr.DataArray(cf)
-cf1.to_netcdf("monthlyCloudFraction-file-level-parallelization.nc")
+    #write output into an nc file
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
 
-#calculate execution time
-t1 = time.time()
-total = t1-t0
-print("execution time : " + str(total))
+    #calculate execution time
+    t1 = time.time()
+    total = t1-t0
+    print("execution time : " + str(total))
 
-#write output into a figure
-plt.figure(figsize=(14,7))
-plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
-plt.xlabel("Longitude", fontsize = 14)
-plt.ylabel("Latitude", fontsize = 14)
-plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize = 16)
-plt.colorbar()
-plt.savefig("monthlyCloudFraction-file-level-parallelization.png")
+    #write output into a figure
+    plt.figure(figsize=(14,7))
+    plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
+    plt.xlabel("Longitude", fontsize = 14)
+    plt.ylabel("Latitude", fontsize = 14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize = 16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-file-level-for-loop.png")
