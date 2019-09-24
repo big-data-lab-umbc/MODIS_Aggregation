@@ -83,7 +83,7 @@ if __name__ == '__main__':
     #calculate execution time
     t1 = time.time()
     total = t1-t0
-    print("execution time : " + str(total))
+    print("total execution time (Seconds):" + str(total))
 
     #write output into a figure
     plt.figure(figsize=(14,7))

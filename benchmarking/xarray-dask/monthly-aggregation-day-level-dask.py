@@ -105,7 +105,7 @@ if __name__ == '__main__':
     #get time in seconds.
     t1 = time.time()
     total = t1 - t0
-    print(total)
+    print("total execution time (Seconds):" + str(total))
 
     plt.figure(figsize=(14, 7))
     plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
