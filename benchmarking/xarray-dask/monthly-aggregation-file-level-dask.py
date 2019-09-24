@@ -33,14 +33,14 @@ t0 = time.time()
 
 
 def aggregateOneFileData(M06_file, M03_file):
-	"""Aggregate one file from MYD06_L2 and its corresponding file from MYD03. Read 'Cloud_Mask_1km' variable from the MYD06_L2 file, read 'Latitude' and 'Longitude' variables from the MYD03 file. Group Cloud_Mask_1km values based on their (lat, lon) grid.
+    """Aggregate one file from MYD06_L2 and its corresponding file from MYD03. Read 'Cloud_Mask_1km' variable from the MYD06_L2 file, read 'Latitude' and 'Longitude' variables from the MYD03 file. Group Cloud_Mask_1km values based on their (lat, lon) grid.
 	Args:
 		M06_file (string): File path for M06_file.
 		M03_file (string): File path for corresponding M03_file.
 		
 	Returns:
 		(cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
-	"""
+    """
     
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
