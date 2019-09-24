@@ -9,30 +9,14 @@ import matplotlib.pyplot as plt
 import time
 from dask.distributed import as_completed
 
-cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
+def aggregateOneDayData(z):
 
-cluster.scale(4)
-
-client = Client(cluster)
-
-var_list = ['Scan Offset', 'Track Offset', 'Height Offset', 'Height', 'SensorZenith', 'SensorAzimuth',
-            'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask', 'WaterPresent', 'gflags',
+    var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
+            'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
             'SV start time', 'EV center time', 'Mirror side', 'SD Sun zenith', 'SD Sun azimuth',
-            'Moon Vector', 'orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
-            'impulse_enc', 'impulse_time', 'thermal_correction']
-
-M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
-
-
-total_pix = np.zeros((180, 360))
-cloud_pix = np.zeros((180, 360))
-
-t0 = time.time()
-
-
-def aggregateOneDayData(z):
+            'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
+            'impulse_enc', 'impulse_time', 'thermal_correction', 'SensorAzimuth']
 
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + "z" + "*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + "z" + "*"))
@@ -64,54 +48,69 @@ def aggregateOneDayData(z):
     return cloud_pix, total_pix
 
 
-index = 31
-y = [str(x).zfill(3) for x in range(index + 1)]
-#w = u.strip('[]')
-#y = u.join(map(str))
-z = y[1:]
-#print(z)
+if __name__ == '__main__':
+
+    cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
+
+    cluster.scale(16)
+
+    client = Client(cluster)
+
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
+
+    #get time in seconds.
+    t0 = time.time()
+
+    index = 31
+    y = [str(x).zfill(3) for x in range(index + 1)]
+    z = y[1:]
+    #print(z)
 
 
-tt = client.submit(aggregateOneDayData,z)
+    tt = client.submit(aggregateOneDayData,z)
 
-result1 = client.gather(tt, asynchronous=True)
-
-
-#future1 = client.submit(ingest_data,M03_dir,M06_dirresult1 = client.gather(tt)
+    result1 = client.gather(tt, asynchronous=True)
 
 
-#tt.result()[1][np.where(tt.result()[1] == 0)] = 1.0
-
-cf = tt.result()[0]/tt.result()[1]
+    #future1 = client.submit(ingest_data,M03_dir,M06_dirresult1 = client.gather(tt)
 
 
-#cloud_pix_global = np.zeros((180, 360))
-#total_pix_global = np.zeros((180, 360))
-# finallist = np.zeros((180, 360))
+    #tt.result()[1][np.where(tt.result()[1] == 0)] = 1.0
+
+    cf = tt.result()[0]/tt.result()[1]
 
 
-#for future, result in as_completed(tt, with_results=True):
-    # print(result.shape)
-#    cloud_pix_global += result[0]
-#    total_pix_global += result[1]
+    #cloud_pix_global = np.zeros((180, 360))
+    #total_pix_global = np.zeros((180, 360))
+    # finallist = np.zeros((180, 360))
 
-#total_pix_global[np.where(total_pix_global == 0)] = 1.0
-#cf = np.zeros((180, 360))
-#cf = cloud_pix_global / total_pix_global
 
-client.close()
+    #for future, result in as_completed(tt, with_results=True):
+        # print(result.shape)
+    #    cloud_pix_global += result[0]
+    #    total_pix_global += result[1]
 
-cf1 = xr.DataArray(cf)
-cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    #total_pix_global[np.where(total_pix_global == 0)] = 1.0
+    #cf = np.zeros((180, 360))
+    #cf = cloud_pix_global / total_pix_global
 
-t1 = time.time()
-total = t1 - t0
-print(total)
+    client.close()
 
-plt.figure(figsize=(14, 7))
-plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
-plt.xlabel("Longitude", fontsize=14)
-plt.ylabel("Latitude", fontsize=14)
-plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
-plt.colorbar()
-plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+
+    #get time in seconds.
+    t1 = time.time()
+    total = t1 - t0
+    print(total)
+
+    plt.figure(figsize=(14, 7))
+    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+    plt.xlabel("Longitude", fontsize=14)
+    plt.ylabel("Latitude", fontsize=14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
