@@ -3,28 +3,29 @@ import numpy as np
 import glob
 import matplotlib.pyplot as plt
 import time
+import h5py
 from pyspark.sql import SparkSession
 
 def aggregateOneFileData(M06_file, M03_file):
-	"""Aggregate one file from MYD06_L2 and its corresponding file from MYD03. Read 'Cloud_Mask_1km' variable from the MYD06_L2 file, read 'Latitude' and 'Longitude' variables from the MYD03 file. Group Cloud_Mask_1km values based on their (lat, lon) grid.
-	Args:
-		M06_file (string): File path for M06_file.
-		M03_file (string): File path for corresponding M03_file.
-		
-	Returns:
-		(cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
-	"""
+    """Aggregate one file from MYD06_L2 and its corresponding file from MYD03. Read 'Cloud_Mask_1km' variable from the MYD06_L2 file, read 'Latitude' and 'Longitude' variables from the MYD03 file. Group Cloud_Mask_1km values based on their (lat, lon) grid.
+    Args:
+        M06_file (string): File path for M06_file.
+        M03_file (string): File path for corresponding M03_file.
+        
+    Returns:
+        (cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
+    """
     
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
     #read 'Cloud_Mask_1km' variable from the MYD06_L2 file, whose shape is (2030, 1354)
-    d06 = xr.open_dataset(M06_file, drop_variables="Scan Type")['Cloud_Mask_1km'][:,:,0].values
+    d06 = Dataset(M06_file, "r").variables['Cloud_Mask_1km'][:,:,0]
     # sampling data with 1/3 ratio (pick 1st, 4th, 7th, ...) in both latitude and longitude direction. d06CM's shape is (677, 452)
     d06CM = d06[::3,::3]
     ds06_decoded = (np.array(d06CM, dtype = "byte") & 0b00000110) >> 1
     # shape of d03_lat and d03_lon: (2030, 1354)
-    d03_lat = xr.open_dataset(M03_file,drop_variables=var_list)['Latitude'][:,:].values
-    d03_lon = xr.open_dataset(M03_file,drop_variables=var_list)['Longitude'][:,:].values
+    d03_lat = Dataset(M03_file, "r").variables['Latitude'][:,:]
+    d03_lon = Dataset(M03_file, "r").variables['Longitude'][:,:]
     
     # sampling data with 1/3 ratio, shape of lat and lon: (677, 452), then convert data from 2D to 1D, then add offset to change value range from (-90, 90) to (0, 180) for lat.
     lat = (d03_lat[::3,::3].ravel() + 89.5).astype(int)
@@ -48,39 +49,51 @@ def aggregateOneFileData(M06_file, M03_file):
     return cloud_pix, total_pix
 
 
+def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
+    f=h5py.File(out_name,'w')
+    PCentry=f.create_dataset('CF',data=total_cloud_fraction)
+    PCentry.dims[0].label='lat_bnd'
+    #PCentry.dims[1].label='lon_bnd'
+    
+    PC=f.create_dataset('lat_bnd',data=lat_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Latitude_boundaries'
+    
+    PC=f.create_dataset('lon_bnd',data=lon_bnd)
+    PC.attrs['units']='degrees'
+    PC.attrs['long_name']='Longitude_boundaries'
+    f.close()
+    print(out_name+' Saved!!')
+
 if __name__ =='__main__':
-	var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 'SensorAzimuth', 
-            'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
-            'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
-            'SV start time', 'EV center time', 'Mirror side', 'SD Sun zenith', 'SD Sun azimuth',
-            'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
-            'impulse_enc', 'impulse_time', 'thermal_correction']
 
-	M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-	M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
-	M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
-	M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
+    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
+    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
+    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
+    file_pairs = zip(M06_files, M03_files)
+    print(file_pairs)
 
-	t0 = time.time()
-	
+    t0 = time.time()
+    
     # Initiate and process the parallel by Spark
     spark = SparkSession\
             .builder\
             .appName("MODIS_agg")\
             .getOrCreate()
     sc = spark.sparkContext
-    spark_job_result = sc.parallelize(files,32).map(lambda x: aggregateOneFileData(M06_files,M03_files)).reduce(add)
-    
-    lat_bnd = np.arange(-90,91,1)
-    lon_bnd = np.arange(-180,180,1)
-    total_cloud_fraction = (spark_job_result[0]/spark_job_result[1]).reshape([lat_bnd,lon_bnd])
-    
-	print('plot global map')
-	plot_global_map(lat_bnd,lon_bnd,total_cloud_fraction, cmap= plt.get_cmap('jet'), \
-            vmin=0.0,vmax=1.0,title='cloud fraction', figure_name='MODIS_total_cloud_fraction_daily_mean')
-    
+    global_cloud_pix, global_total_pix = sc.parallelize(list(file_pairs),3).map(lambda x: aggregateOneFileData(x[0],x[1])).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
     spark.stop() # Stop Spark
-	#calculate execution time
-	t1 = time.time()
-	total = t1-t0
-	print("total execution time:" + total)
+    lat_bnd = np.arange(-90,90,1)
+    lon_bnd = np.arange(-180,180,1)
+    global_total_pix[np.where(global_total_pix == 0)]=1.0
+    total_cloud_fraction = (global_cloud_pix/global_total_pix)
+    print("total_cloud_fraction:" + str(total_cloud_fraction))
+    print("total_cloud_fraction.shape:" + str(total_cloud_fraction.shape))
+    #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
+    save_hdf('cloud_fraction_mean.hdf',total_cloud_fraction,lat_bnd,lon_bnd)
+
+    #calculate execution time
+    t1 = time.time()
+    total = t1-t0
+    print("total execution time:" + str(total))
