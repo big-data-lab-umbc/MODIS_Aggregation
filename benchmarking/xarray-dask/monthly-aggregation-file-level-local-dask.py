@@ -1,4 +1,3 @@
-from dask_jobqueue import SLURMCluster
 from dask.distributed import Client
 from dask.distributed import wait
 import dask
@@ -18,7 +17,7 @@ def aggregateOneFileData(M06_file, M03_file):
 	Returns:
 		(cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
     """
-    
+
     var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
             'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
@@ -36,6 +35,8 @@ def aggregateOneFileData(M06_file, M03_file):
     # shape of d03_lat and d03_lon: (2030, 1354)
     d03_lat = xr.open_dataset(M03_file,drop_variables=var_list)['Latitude'][:,:].values
     d03_lon = xr.open_dataset(M03_file,drop_variables=var_list)['Longitude'][:,:].values
+    #d03_lat = xr.open_dataset(M03_file)['Latitude'][:,:].values
+    #d03_lon = xr.open_dataset(M03_file)['Longitude'][:,:].values
     
     # sampling data with 1/3 ratio, shape of lat and lon: (677, 452), then convert data from 2D to 1D, then add offset to change value range from (-90, 90) to (0, 180) for lat.
     lat = (d03_lat[::3,::3].ravel() + 89.5).astype(int)
@@ -59,15 +60,11 @@ def aggregateOneFileData(M06_file, M03_file):
     return cloud_pix, total_pix
 
 if __name__ == '__main__':
+    #client = Client("127.0.0.1:8786")
+    client = Client()
 
-    cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
-
-    cluster.scale(16)
-
-    client = Client(cluster)
-
-    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
@@ -78,6 +75,7 @@ if __name__ == '__main__':
 
     cloud_pix_global = np.zeros((180, 360))
     total_pix_global = np.zeros((180, 360))
+    #finallist = np.zeros((180, 360))
 
     #add each aggregateOneFileData function call result (namely one file result) to final global 2D result
     for future, result in as_completed(tt, with_results= True):

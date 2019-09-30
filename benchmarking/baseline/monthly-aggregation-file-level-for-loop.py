@@ -1,13 +1,8 @@
-from dask_jobqueue import SLURMCluster
-from dask.distributed import Client
-from dask.distributed import wait
-import dask
 import numpy as np
 import xarray as xr
 import glob
 import matplotlib.pyplot as plt
 import time
-from dask.distributed import as_completed
 
 def aggregateOneFileData(M06_file, M03_file):
     """Aggregate one file from MYD06_L2 and its corresponding file from MYD03. Read 'Cloud_Mask_1km' variable from the MYD06_L2 file, read 'Latitude' and 'Longitude' variables from the MYD03 file. Group Cloud_Mask_1km values based on their (lat, lon) grid.
@@ -57,44 +52,33 @@ def aggregateOneFileData(M06_file, M03_file):
         cloud_pix[x,y] += 1  
         
     return cloud_pix, total_pix
-
+    
 if __name__ == '__main__':
 
-    cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
-
-    cluster.scale(16)
-
-    client = Client(cluster)
-
-    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
     t0 = time.time()
 
-    tt = client.map(aggregateOneFileData, M06_files, M03_files)
-
-
     cloud_pix_global = np.zeros((180, 360))
     total_pix_global = np.zeros((180, 360))
 
-    #add each aggregateOneFileData function call result (namely one file result) to final global 2D result
-    for future, result in as_completed(tt, with_results= True):
-        #print(result.shape)
-        cloud_pix_global+=result[0]
-        total_pix_global+=result[1]
+
+    for M06_file, M03_file in zip (M06_files, M03_files):
+        one_day_result = aggregateOneFileData(M06_file, M03_file)
+        cloud_pix_global+=one_day_result[0]
+        total_pix_global+=one_day_result[1]
 
     #calculate final cloud fraction using global 2D result
     total_pix_global[np.where(total_pix_global == 0)]=1.0
     cf = np.zeros((180, 360))
     cf = cloud_pix_global/total_pix_global
 
-    client.close()
-
     #write output into an nc file
     cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-file-level-parallelization.nc")
+    cf1.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
 
     #calculate execution time
     t1 = time.time()
@@ -108,4 +92,4 @@ if __name__ == '__main__':
     plt.ylabel("Latitude", fontsize = 14)
     plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize = 16)
     plt.colorbar()
-    plt.savefig("monthlyCloudFraction-file-level-parallelization.png")
+    plt.savefig("monthlyCloudFraction-file-level-for-loop.png")
