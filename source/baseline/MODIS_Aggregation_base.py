@@ -8,7 +8,7 @@ Chamara Rajapakshe
 (cpn.here@umbc.edu)
 ********************************************
 
-- This example code that can aggregate MODIS level 2 data for a given set of variables
+- This example code can aggregate MODIS level 2 data for a given set of variables
   and statistics (min, max, mean, SD).
 - This is an intermediate version. Functionalities/usages of each object/function
   are described inside themselves including the directions for future implementations. 
@@ -185,12 +185,17 @@ class MODIS_L2toL3(object):
         
         
         #mean and stdd (Initialization)
-        M.XXX_pix={}
-        for key in self.variables:
-            M.XXX_pix[key]=np.zeros(nlat*nlon)
-        M.XXX_pixSq=M.XXX_pix # For Stdd
+        #Initialization of the variables that'd be required to calculate mean/stdd (or both) if the user
+        #specified to compute either mean or stdd or both
+        if 'mean' in self.stats or 'stdd' in self.stats:
+            M.XXX_pix={}
+            for key in self.variables:
+                M.XXX_pix[key]=np.zeros(nlat*nlon)
+        if 'stdd' in self.stats:
+            M.XXX_pixSq=M.XXX_pix # For Stdd
         #Min and Max (Initialization) 
-        M.mnx={};M.stt={}
+        #Initialization of the variables that'd be required to calculate min/max (or both) if the user
+        #specified to compute either min or max or both
         if 'min' in self.stats:
             M.mnx['min']={}
             M.stt['min']={}
@@ -203,6 +208,7 @@ class MODIS_L2toL3(object):
                 M.mnx['max'][key]=np.zeros(nlat*nlon)-np.inf
         '''
         ***********************************************************************
+        Defining minmax() function depending on the user requirements
         ***********************************************************************
         '''
         # Min and Max computations
@@ -231,6 +237,9 @@ class MODIS_L2toL3(object):
                 if mx>M.mnx['max'][key][j]:
                     M.mnx['max'][key][j]=mx
         '''
+        ***********************************************************************
+        Defining MeanStd() function depending on the user requirements.
+        (minmax() function will be called inside MeanStd())
         ***********************************************************************
         '''        
         # Min, max, mean and stdd computations
@@ -322,7 +331,7 @@ class MODIS_L2toL3(object):
         #Cloud fractions
         M.total_cloud_fraction  =  division(M.CLD_pix,M.TOT_pix).reshape([nlat,nlon])
         M.pixel_count = M.CLD_pix.reshape([nlat,nlon])
-        #The other statistics
+        #The other statistics for all the user specified variables
         for key in data:
             for st in M.stt:
                 if st == 'stdd':
