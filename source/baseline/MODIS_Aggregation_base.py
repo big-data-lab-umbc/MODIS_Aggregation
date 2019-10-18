@@ -7,9 +7,17 @@ by
 Chamara Rajapakshe
 (cpn.here@umbc.edu)
 ********************************************
-To aggregate MODIS level 2 data.
+
+- This example code can aggregate MODIS level 2 data for a given set of variables
+  and statistics (min, max, mean, SD).
+- This is an intermediate version. Functionalities/usages of each object/function
+  are described inside themselves including the directions for future implementations. 
+- 3 Main classes
+  (1) MODIS_Level2 => To handle MODIS_Level2 data
+  (2) MODIS_L2toL3 => To perform L2 to L3 aggregation
+  (3) MODIS_level3 => To handle aggregated L3 data / read original L3 data
 -----------------------------------------------------
-value_locate(), division() from MODAgg_daily_mean.py
+value_locate(), division() are from MODAgg_daily_mean.py
 """
 from netCDF4 import Dataset
 from jdcal import gcal2jd
@@ -89,20 +97,30 @@ def day_of_year(yr,mn,dy):
     return JD
 
 class MODIS_Level2(object):
+    '''
+    To handle MODIS_Level2 data.
+     - So far, only read HDF files in readHDF() function.
+     - If needed, additional functions could be added for data representations, etc.
+    '''
     def __init__(self,variables):
         '''
-        variables (Dictionary): {'Acronym1':('Full_name1','units1'),...}
+        variables (Dictionary): Selected variables to perform computations 
+            ex. variables={'Acronym1':('Full_name1','units1'),...}
         '''
         self.var=variables
         return
     def readHDF(self,MYD03,MYD06):
         '''
         MOD06,MOD03: Filenames including the full path.
+        Returns:
+            latitude,longitude: arrays
+            data: Dictionary contains all the variables that had been given to read in.
         '''
         data={}
         myd06 = Dataset(MYD06, "r")
         CM1km = readEntry('Cloud_Mask_1km',myd06)             #Cloud mask
         data['CM'] = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
+        #Read all the other specified variables
         for key in self.var:
             data[key]=readEntry(self.var[key][0],myd06)
         
@@ -123,8 +141,8 @@ class MODIS_L2toL3(object):
         stats (String array): ['mean','stdd','min','max'] or any combination
         start:
             if l3product='D3' => Date ex. '01/01/2008'
-            [NOT IMPLEMENTED]if l3product='E3' => Starting date ex. '01/01/2008' (eight day from the given date will considered)
-            [NOT IMPLEMENTED]if l3product='Me' => Month ex. '01/2008'
+            [NOT IMPLEMENTED]if l3product='E3' => Starting date ex. '01/01/2008' (eight days from the given date will considered)
+            [NOT IMPLEMENTED]if l3product='M3' => Month ex. '01/2008'
         l3product (String): 'D3','E3','M3' for daily, eight-day and monthly
         '''
         self.variables=variables
@@ -154,6 +172,8 @@ class MODIS_L2toL3(object):
         '''
         Initializations (Both variables and functions for multiple statistics)
         ***************************************************************************
+        Since ONLY the user-specified statistics have to be computed, to avoid conditioning (using if statements)
+        inside the for loop, separate functions are defined.
         Memory allocation and computations are only be done for the requested variables
         (any combination of variables ex. CTP,CTT,COT,CER,etc.) and statistics
         (any combination of min,max,mean,stdd).
@@ -161,14 +181,21 @@ class MODIS_L2toL3(object):
         M=Memory() # An empty object to store variables
         M.TOT_pix      = np.zeros(nlat*nlon)#To compute CF 
         M.CLD_pix      = np.zeros(nlat*nlon)#Will be needed for all others including CF
+#        M.CF = {'CF':np.zeros(nlat*nlon),'min':np.zeros(nlat*nlon),'max':np.zeros(nlat*nlon)}
+        
         
         #mean and stdd (Initialization)
-        M.XXX_pix={}
-        for key in self.variables:
-            M.XXX_pix[key]=np.zeros(nlat*nlon)
-        M.XXX_pixSq=M.XXX_pix # For Stdd
+        #Initialization of the variables that'd be required to calculate mean/stdd (or both) if the user
+        #specified to compute either mean or stdd or both
+        if 'mean' in self.stats or 'stdd' in self.stats:
+            M.XXX_pix={}
+            for key in self.variables:
+                M.XXX_pix[key]=np.zeros(nlat*nlon)
+        if 'stdd' in self.stats:
+            M.XXX_pixSq=M.XXX_pix # For Stdd
         #Min and Max (Initialization) 
-        M.mnx={};M.stt={}
+        #Initialization of the variables that'd be required to calculate min/max (or both) if the user
+        #specified to compute either min or max or both
         if 'min' in self.stats:
             M.mnx['min']={}
             M.stt['min']={}
@@ -179,6 +206,11 @@ class MODIS_L2toL3(object):
             M.stt['max']={}
             for key in self.variables:
                 M.mnx['max'][key]=np.zeros(nlat*nlon)-np.inf
+        '''
+        ***********************************************************************
+        Defining minmax() function depending on the user requirements
+        ***********************************************************************
+        '''
         # Min and Max computations
         if not(bool(M.mnx)):
             #No min or max are needed
@@ -204,7 +236,12 @@ class MODIS_L2toL3(object):
                 mx=val.max()
                 if mx>M.mnx['max'][key][j]:
                     M.mnx['max'][key][j]=mx
-                
+        '''
+        ***********************************************************************
+        Defining MeanStd() function depending on the user requirements.
+        (minmax() function will be called inside MeanStd())
+        ***********************************************************************
+        '''        
         # Min, max, mean and stdd computations
         if 'stdd' in self.stats:
             #if only stdd
@@ -212,35 +249,37 @@ class MODIS_L2toL3(object):
             def MeanStd(data,j,latlon_index,M):
                 #Both mean and stdd
                 for key in data:
-                    if key!='CM':
-                        val=data[key][np.where(latlon_index == j)]
-                        M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)
-                        M.XXX_pixSq[key][j]=M.XXX_pixSq[key][j]+np.sum(val**2)   
-                        minmax(val,j,M)
+                    #print(key)
+                    val=data[key][np.where(latlon_index == j)]
+                    M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)
+                    M.XXX_pixSq[key][j]=M.XXX_pixSq[key][j]+np.sum(val**2)   
+                    minmax(val,j,M)
         elif 'mean' in self.stats:
             #if only mean
             M.stt['mean']={}
             def MeanStd(data,j,latlon_index,M):
                 #Only mean
                 for key in data:
-                    if key!='CM':
-                        val=data[key][np.where(latlon_index == j)]
-                        M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)  
-                        minmax(val,j,M)
+                    val=data[key][np.where(latlon_index == j)]
+                    M.XXX_pix[key][j]=M.XXX_pix[key][j]+np.sum(val)  
+                    minmax(val,j,M)
         elif len(M.mnx)>0:
             #No mean,stdd but min or max
             def MeanStd(data,j,latlon_index,M):
                 for key in data:
-                    if key!='CM':
-                        val=data[key][np.where(latlon_index == j)]
-                        minmax(val,j,M)
+                    val=data[key][np.where(latlon_index == j)]
+                    minmax(val,j,M)
         else:
             #if no any stats
             def MeanStd(data,j,latlon_index,M):
                 pass
         '''
-        Looping through files
-        ***************************************************************************
+        ***********************************************************************
+        ***********************************************************************
+        '''
+        '''
+        Looping over the files
+        ======================
         '''
         #-----------------------------------------------
         tot_F=0 #Total number of file couples read
@@ -267,6 +306,8 @@ class MODIS_L2toL3(object):
                 if MOD03_fn and MOD06_fn: # if both MOD06 and MOD03 products are in the directory
                     tot_F+=1
                     Lat,Lon,data = MD.readHDF(MOD03_path+MOD03_fn,MOD06_path+MOD06_fn)
+                    CM=data['CM'].ravel()
+                    del data['CM'] #CM is not a final product
                     for key in data:
                         data[key]=data[key].ravel()    
                     Lat=Lat.ravel()
@@ -278,28 +319,29 @@ class MODIS_L2toL3(object):
                     
                     for i in np.arange(latlon_index_unique.size):
                         j=latlon_index_unique[i]
-                        M.TOT_pix[j] = M.TOT_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]>=0)
-                        M.CLD_pix[j] = M.CLD_pix[j]+np.sum(data['CM'][np.where(latlon_index == j)]<=1)
+                        M.TOT_pix[j] = M.TOT_pix[j]+np.sum(CM[np.where(latlon_index == j)]>=0)
+                        M.CLD_pix[j] = M.CLD_pix[j]+np.sum(CM[np.where(latlon_index == j)]<=1)
                         #To calculate other variables and statistics---------------------------
                         MeanStd(data,j,latlon_index,M)
                         #-------------------------------------------------------------------
+                    
+
                 granule_time += datetime.timedelta(minutes=5)
     
         #Cloud fractions
         M.total_cloud_fraction  =  division(M.CLD_pix,M.TOT_pix).reshape([nlat,nlon])
         M.pixel_count = M.CLD_pix.reshape([nlat,nlon])
-        #The other statistics
+        #The other statistics for all the user specified variables
         for key in data:
-            if key!='CM':
-                for st in M.stt:
-                    if st == 'stdd':
-                        M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
-                        #stdd=np.sqrt(<Xi^2>-<X>^2)
-                        M.stt[st][key]=np.sqrt(division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]**2)
-                    elif st == 'mean':
-                        M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
-                    if st == 'min' or st == 'max':
-                        M.stt[st][key]=M.mnx[st][key].reshape([nlat,nlon])
+            for st in M.stt:
+                if st == 'stdd':
+                    M.stt['mean'][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
+                    #stdd=np.sqrt(<Xi^2>-<X>^2)
+                    M.stt[st][key]=np.sqrt(division(M.XXX_pixSq[key],M.CLD_pix).reshape([nlat,nlon])-M.stt['mean'][key]**2)
+                elif st == 'mean':
+                    M.stt[st][key]=division(M.XXX_pix[key],M.CLD_pix).reshape([nlat,nlon])
+                if st == 'min' or st == 'max':
+                    M.stt[st][key]=M.mnx[st][key].reshape([nlat,nlon])
         self.M=M
         self.lat_bnd=lat_bnd
         self.lon_bnd=lon_bnd
@@ -379,29 +421,35 @@ class MODIS_level3(object):
 
 
 if __name__=='__main__':
-    #mode='test'# Only 3 files
-    mode='.2Vars'# 2 variables. All the statistics
-    out_name='MODAgg_day_'+mode
-    start='01/01/2008'
-#        CTP = ('cloud_top_pressure_1km',myd06)     #Cloud Top Pressure (hPa)
-#        CTT = ('cloud_top_temperature_1km',myd06)  #Cloud Top Temperature (K)
-#        CTH = ('cloud_top_height_1km',myd06)       #Cloud Top Height (m)
+    fname_ap='.test22'# A string to append to the final output file.
+    start='01/01/2008'# Starting date
+    
+    '''
+    Selecting variables and statistics
+    ==================================
+    variables: Dictionary
+        ex. variables={'short_name':('MODIS_L2_variable_name','units')}
+    stats: String array
+        ex. stats=['mean','max','stdd','min'] # stdd-STandarD Deviation
+        ex. stats=['mean','max']
+    ONLY selected variables and statistics will be computed.
+    '''
     variables={'CTP':('cloud_top_pressure_1km','hPa'),'CTT':('cloud_top_temperature_1km','K')}
     stats = ['mean', 'max', 'stdd','min']
-    #MOD03_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD03/'
-    #MOD06_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD06/'
-    MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
-    MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+
+    '''
+    File paths
+    ==========
+    '''
+    MOD03_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD03/'
+    MOD06_path='/umbc/xfs1/jianwu/users/charaj1/CMAC/MODIS-Aggregation/input-data/MYD06/'
+    #MOD03_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+    #MOD06_path = '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
 
     #--------------------------------------------------------------------------
-    Agg=MODIS_L2toL3(variables, stats,start)
-    Agg.Aggregate(MOD03_path,MOD06_path,fname_ap=mode)
+    Agg=MODIS_L2toL3(variables, stats,start) # Creating an object with the given specifications
+    Agg.Aggregate(MOD03_path,MOD06_path,fname_ap=fname_ap) # Performing the computations
+    
+    # Saving level 3 files
     L3=MODIS_level3()
     L3.save_level3_hdf5(Agg)
-    #Ex. Agg.M.stt['min']['CTP']
-    #Ex. Agg.M.stt['mean']['CTT']
-    
-#    from comparisons import doPlot, readData
-#    benchmark_p="/home/cpnhere/taki_jw/CMAC/MODIS-Aggregation/output-data/benchmark/MODAgg_3var_parMonth/"
-#    CF_BMK,_,_=readData(benchmark_p+"MODAgg_3var_parMonth_20080101.hdf5")
-#    fig1,fig1_ttl=doPlot(total_cloud_fraction,CF_BMK,'Comparison')
