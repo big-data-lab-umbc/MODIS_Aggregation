@@ -50,7 +50,8 @@ def aggregateOneDayData(z):
 
 if __name__ == '__main__':
 
-    cluster = SLURMCluster(cores=1, memory='50 GB', project='pi_jianwu', queue='batch', walltime='02:00:00', job_extra=['--exclusive', '--qos=medium+'])
+    cluster = SLURMCluster(cores=1, memory='50 GB', project='pi_jianwu',\
+            queue='batch', walltime='02:00:00', job_extra=['--exclusive', '--qos=medium+'])
 
     cluster.scale(16)
 
