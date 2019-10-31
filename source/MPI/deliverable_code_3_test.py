@@ -11,6 +11,7 @@ Created on 2019
 
 import os 
 import sys
+import h5py
 import timeit
 import random
 import numpy as np
@@ -107,13 +108,13 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs):
 	return (Count,Fraction_Min,Fraction_Max,TOT_Fraction,TOT_Fraction_sq)
 
 #Mean and std. computations. minmax() is called inside this function
-def MeanStd(data,z,latlon_index,M):
-	#Both mean and stdd
-	#print(key)
-	val=data[np.where(latlon_index == z)]
-	M.XXX_pix[key][z]=M.XXX_pix[key][z]+np.sum(val)
-	M.XXX_pixSq[key][z]=M.XXX_pixSq[key][z]+np.sum(val**2)   
-	minmax(val,z,M)
+#def MeanStd(data,z,latlon_index,M):
+#	#Both mean and stdd
+#	#print(key)
+#	val=data[np.where(latlon_index == z)]
+#	M.XXX_pix[key][z]=M.XXX_pix[key][z]+np.sum(val)
+#	M.XXX_pixSq[key][z]=M.XXX_pixSq[key][z]+np.sum(val**2)   
+#	minmax(val,z,M)
 
 def addGridEntry(f,name,units,long_name,data):
 	'''
@@ -131,6 +132,21 @@ def addGridEntry(f,name,units,long_name,data):
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
 	
+	#-------------STEP 0: Read the input from User --------
+	# checking user input
+    #if len(sys.argv) != 7:
+    #    print("Wrong user input")
+    #    print("usage: python deliverable_code_3_test.py <True/False> <True/False> <True/False> <True/False> <True/False> <Bin Size>")
+    #    sys.exit()
+    #else:
+    #    # pass system arguments to the function
+    #    minimum = sys.argv[1]
+    #    maximum = sys.argv[2]
+    #    mean    = sys.argv[3]
+    #    std     = sys.argv[4]
+    #    count   = sys.argv[5] 
+    #    binsize = sys.argv[6] 
+
 	#-------------STEP 1: Set up the specific directory --------
 	MYD06_dir= '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
 	MYD06_prefix = 'MYD06_L2.A'
@@ -170,16 +186,15 @@ if __name__ =='__main__':
 
 	# Read all files in a month (in this case: January)
 	# Read the filename list for different time period
-	#days = np.arange(1,2,dtype=np.int)
 	years  = np.array([2008])
 	months = np.array([1])
 	days = np.arange(1,2,dtype=np.int) 
 
-	for yr,day in days,years:
-		yc ='%04i' % iy
+	for yr,day in zip(years,days):
+		yc ='%04i' % yr
 		dc ='%03i' % day
-		fname_tmp1 = read_filelist(MYD06_dir,MYD06_prefix,yr,dc,fileformat)
-		fname_tmp2 = read_filelist(MYD03_dir,MYD03_prefix,yr,dc,fileformat)
+		fname_tmp1 = read_filelist(MYD06_dir,MYD06_prefix,yc,dc,fileformat)
+		fname_tmp2 = read_filelist(MYD03_dir,MYD03_prefix,yc,dc,fileformat)
 		fname1 = np.append(fname1,fname_tmp1)
 		fname2 = np.append(fname2,fname_tmp2)
 
@@ -193,7 +208,7 @@ if __name__ =='__main__':
 	remain   = size-len(fname1)%size
 	ppn_file = (len(fname1)+remain)/size 
 
-	if ppn_file > remain: 
+	if ppn_file >= remain: 
 		# Distribute the day's loops into MPI ppns
 		files = np.arange(len(fname1)+remain)
 		tasks = np.array(np.split(files,size))
@@ -264,50 +279,79 @@ if __name__ =='__main__':
 		# Create HDF5 file to store the result 
 		l3name='MOD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
 		ff=h5py.File(l3name+'.hdf5','w')
+
+		PC=ff.create_dataset('lat_bnd',data=map_lat)
+		PC.attrs['units']='degrees'
+		PC.attrs['long_name']='Latitude_boundaries'    
+
+		PC=ff.create_dataset('lon_bnd',data=map_lon)
+		PC.attrs['units']='degrees'
+		PC.attrs['long_name']='Longitude_boundaries'    
+		
 		addGridEntry(ff,'Cloud_Fraction_Mean'              ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Mean_Fraction)
 		addGridEntry(ff,'Cloud_Fraction_Standard_Deviation','none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Std_Fraction )
 		addGridEntry(ff,'Cloud_Fraction_Minimum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Min )
 		addGridEntry(ff,'Cloud_Fraction_Maximum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Max )
 		addGridEntry(ff,'Cloud_Fraction_Pixel_Counts'      ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Count) 
 		
-		PC=ff.create_dataset('lat_bnd',data=Agg.map_lat)
-        PC.attrs['units']='degrees'
-        PC.attrs['long_name']='Latitude_boundaries'    
+		ff.close()
 
-        PC=ff.create_dataset('lon_bnd',data=Agg.map_lon)
-        PC.attrs['units']='degrees'
-        PC.attrs['long_name']='Longitude_boundaries'    
-        ff.close()
-
-        print(l3name+'.hdf5 Saved!')
-
-def save_level3_hdf5(self,Agg):
-        '''
-        To save aggregated data products.
-        Agg: MODIS_L2toL3 object
-        '''
-        self.MODIS_L2toL3=Agg
-        self.fname=Agg.l3name
-        ff=h5py.File(self.fname+'.hdf5','w')
-        self.addGridEntry(ff,'CF','Fraction','Cloud_Fraction',Agg.M.total_cloud_fraction)
-        self.addGridEntry(ff,'PC','Count','Pixel_Count',Agg.M.pixel_count)
-        for key in Agg.variables:
-            for st in Agg.M.stt:
-                self.addGridEntry(ff, key+'_'+st, Agg.variables[key][1], Agg.variables[key][0]+'_'+self.get_long_name(st), \
-                                  Agg.M.stt[st][key])
-        PC=ff.create_dataset('lat_bnd',data=Agg.lat_bnd)
-        PC.attrs['units']='degrees'
-        PC.attrs['long_name']='Latitude_boundaries'    
-
-        PC=ff.create_dataset('lon_bnd',data=Agg.lon_bnd)
-        PC.attrs['units']='degrees'
-        PC.attrs['long_name']='Longitude_boundaries'    
-        ff.close()
-        print(self.fname+'.hdf5 Saved!')
-
-
+		print(l3name+'.hdf5 Saved!')
 
 	else:
 		print("Process {} finished".format(rank))
 		send_req = comm.Isend(results, dest=0, tag=0)
 		send_req.wait()
+
+
+#def main():
+#
+#    # checking user input
+#    if len(sys.argv) != 6:
+#        print("Wrong user input")
+#        print("usage: python format_meteo_forcing.py <template raster> <met data input path> <forcing file outpath> <start year> <end year>")
+#        #print "DIR INPUTS SHOULD CONTAIN TRAILING /"
+#        sys.exit()
+#
+#    else:
+#        if sys.argv[2][-1] != '/':
+#            print("Input met data dir should contain trailing '/'")
+#            print("fixing it for you...")
+#            sys.argv[2] = sys.argv[2] + "/"
+#
+#        if sys.argv[3][-1] != '/':
+#            print("Output forcing data dir should contain trailing '/'")
+#            print("fixing it for you...")
+#            sys.argv[3] = sys.argv[3] + "/"
+#
+#        # pass system arguments to the function
+#        t1 = datetime.now()
+#        format_meteo_forcing(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5])
+#        dt = datetime.now()-t1
+#        print ('Processing time: {0}'.format(dt))
+#
+#    return
+
+#def save_level3_hdf5(self,Agg):
+#        '''
+#        To save aggregated data products.
+#        Agg: MODIS_L2toL3 object
+#        '''
+#        self.MODIS_L2toL3=Agg
+#        self.fname=Agg.l3name
+#        ff=h5py.File(self.fname+'.hdf5','w')
+#        self.addGridEntry(ff,'CF','Fraction','Cloud_Fraction',Agg.M.total_cloud_fraction)
+#        self.addGridEntry(ff,'PC','Count','Pixel_Count',Agg.M.pixel_count)
+#        for key in Agg.variables:
+#            for st in Agg.M.stt:
+#                self.addGridEntry(ff, key+'_'+st, Agg.variables[key][1], Agg.variables[key][0]+'_'+self.get_long_name(st), \
+#                                  Agg.M.stt[st][key])
+#        PC=ff.create_dataset('lat_bnd',data=Agg.lat_bnd)
+#        PC.attrs['units']='degrees'
+#        PC.attrs['long_name']='Latitude_boundaries'    
+#
+#        PC=ff.create_dataset('lon_bnd',data=Agg.lon_bnd)
+#        PC.attrs['units']='degrees'
+#        PC.attrs['long_name']='Longitude_boundaries'    
+#        ff.close()
+#        print(self.fname+'.hdf5 Saved!')
