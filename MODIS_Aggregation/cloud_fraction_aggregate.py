@@ -59,6 +59,7 @@ def displayOutput(cf):
     # write output into an nc file
     cf1 = xr.DataArray(cf)
     cf1.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
+    print("Created netcdf file monthlyCloudFraction-file-level-for-loop.nc")
 
     # write output into a figure
     plt.figure(figsize=(14, 7))
@@ -68,6 +69,7 @@ def displayOutput(cf):
     plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
     plt.colorbar()
     plt.savefig("monthlyCloudFraction-file-level-for-loop.png")
+    print("Created plot monthlyCloudFraction-file-level-for-loop.png")
 
 
 def calculateCloudFraction(M03_files, M06_files):
@@ -87,8 +89,8 @@ def calculateCloudFraction(M03_files, M06_files):
 
 
 def getInputDirectories():
-    M03_dir = "/Users/jianwu/Documents/github/MODIS_Aggregation/input-data/MYD03/"
-    M06_dir = "/Users/jianwu/Documents/github/MODIS_Aggregation/input-data/MYD06/"
+    M03_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD03/"
+    M06_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD06/"
     return M03_dir, M06_dir
 
 
@@ -97,9 +99,11 @@ if __name__ == '__main__':
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
     t0 = time.time()
+    # calculate cloud fraction
     cf = calculateCloudFraction(M03_files, M06_files)
     # calculate execution time
     t1 = time.time()
     total = t1 - t0
     print("total execution time (Seconds):" + str(total))
+    # display the output
     displayOutput(cf)
