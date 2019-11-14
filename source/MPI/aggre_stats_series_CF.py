@@ -220,107 +220,55 @@ if __name__ =='__main__':
 		fname1 = np.append(fname1,fname_tmp1)
 		fname2 = np.append(fname2,fname_tmp2)
 
-	# Initiate MPI 
-	comm = MPI.COMM_WORLD
-	rank = comm.Get_rank()
-	size = comm.Get_size()
-	random.seed(rank)
-
-	# Distribute the number of files into ppns for MPI
-	remain   = size-len(fname1)%size
-	ppn_file = (len(fname1)+remain)/size 
-
-	if ppn_file >= remain: 
-		# Distribute the day's loops into MPI ppns
-		files = np.arange(len(fname1)+remain)
-		tasks = np.array(np.split(files,size))
-		fileloop = tasks[rank]
-	
-		if rank == (size-1): 
-			fileloop = np.delete(fileloop, np.arange(len(fileloop)-remain,len(fileloop)))
-	else:
-		# Distribute the day's loops into MPI ppns
-		files = np.arange(len(fname1)-len(fname1)%size)
-		tasks = np.array(np.split(files,size))
-		fileloop = tasks[rank]
-	
-		if rank == (size-1): 
-			fileloop = np.append(fileloop, np.arange(len(files),len(files)+len(fname1)%size))
-
-	print("process {} aggregating files from {} to {}...".format(rank, fileloop[0],fileloop[-1]))
+	fileloop = np.arange(len(fname1))
 	
 	# Start counting operation time
 	start_time = timeit.default_timer() 
 
 	results = np.asarray(run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop))
 		
-	if rank == 0:
-		Count           += results[0,:]
-		Fraction_Min     = results[1,:]
-		Fraction_Max     = results[2,:]
-		TOT_Fraction    += results[3,:]
-		TOT_Fraction_sq += results[4,:]
+	Count           += results[0,:]
+	Fraction_Min     = results[1,:]
+	Fraction_Max     = results[2,:]
+	TOT_Fraction    += results[3,:]
+	TOT_Fraction_sq += results[4,:]
 
-		for i in range(1,size):
-			recv_req = comm.Irecv(results,source=i, tag=0)
-			recv_req.wait()
-			
-			Count = Count + results[1,:]
-			Fraction_Min = np.dstack((Fraction_Min,results[2,:]))
-			Fraction_Max = np.dstack((Fraction_Max,results[3,:]))
-			TOT_Fraction = TOT_Fraction + results[0,:]
-			TOT_Fraction_sq = TOT_Fraction_sq + results[4,:]
+	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
+	Mean_Fraction = (TOT_Fraction / Count)
+	Std_Fraction  = (TOT_Fraction_sq / Count) - Mean_Fraction**2
 
-		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
-		Mean_Fraction = (TOT_Fraction / Count)
-		Std_Fraction  = (TOT_Fraction_sq / Count) - Mean_Fraction**2
+	Count         =         Count.reshape([grid_lat,grid_lon])
+	Mean_Fraction = Mean_Fraction.reshape([grid_lat,grid_lon])
+	Std_Fraction  =  Std_Fraction.reshape([grid_lat,grid_lon])
 
-		Count         =         Count.reshape([grid_lat,grid_lon])
-		Mean_Fraction = Mean_Fraction.reshape([grid_lat,grid_lon])
-		Std_Fraction  =  Std_Fraction.reshape([grid_lat,grid_lon])
+	Fraction_Min = np.min(Fraction_Min).reshape([grid_lat,grid_lon])
+	Fraction_Max = np.max(Fraction_Max).reshape([grid_lat,grid_lon])
 
-		Fraction_Min = np.min(Fraction_Min,axis=2).reshape([grid_lat,grid_lon])
-		Fraction_Max = np.max(Fraction_Max,axis=2).reshape([grid_lat,grid_lon])
+	end_time = timeit.default_timer()
 
-		end_time = timeit.default_timer()
+	print('Mean_Fraction:')
+	print( Mean_Fraction  )
 
-		print('Mean_Fraction:')
-		print( Mean_Fraction  )
+	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
+	
+	# Create HDF5 file to store the result 
+	l3name='MOD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
+	ff=h5py.File(l3name+'.hdf5','w')
 
-		print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
-		
-		# Create file to store the result 
-		#np.savetxt("cloud_fraction_mean.dat", Mean_Fraction, fmt="%10.4f")
-		#np.savetxt("cloud_fraction_min.dat" , Fraction_Min , fmt="%10.4f")
-		#np.savetxt("cloud_fraction_max.dat" , Fraction_Max , fmt="%10.4f")
-		#np.savetxt("cloud_fraction_std.dat" , Std_Fraction , fmt="%10.4f")
-		#np.savetxt("cloud_fraction_pix_count.dat",   Count , fmt="%10d")
-		#np.savetxt("test_geolocation_lat.dat" , Lat, fmt="%10.4f")
-		#np.savetxt("test_geolocation_lon.dat" , Lon, fmt="%10.4f")
+	PC=ff.create_dataset('lat_bnd',data=map_lat)
+	PC.attrs['units']='degrees'
+	PC.attrs['long_name']='Latitude_boundaries'    
 
-		# Create HDF5 file to store the result 
-		l3name='MOD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
-		ff=h5py.File(l3name+'.hdf5','w')
+	PC=ff.create_dataset('lon_bnd',data=map_lon)
+	PC.attrs['units']='degrees'
+	PC.attrs['long_name']='Longitude_boundaries'    
 
-		PC=ff.create_dataset('lat_bnd',data=map_lat)
-		PC.attrs['units']='degrees'
-		PC.attrs['long_name']='Latitude_boundaries'    
+	addGridEntry(ff,'Cloud_Fraction_Mean'              ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Mean_Fraction)
+	addGridEntry(ff,'Cloud_Fraction_Standard_Deviation','none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Std_Fraction )
+	addGridEntry(ff,'Cloud_Fraction_Minimum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Min )
+	addGridEntry(ff,'Cloud_Fraction_Maximum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Max )
+	addGridEntry(ff,'Cloud_Fraction_Pixel_Counts'      ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Count) 
+	
+	ff.close()
 
-		PC=ff.create_dataset('lon_bnd',data=map_lon)
-		PC.attrs['units']='degrees'
-		PC.attrs['long_name']='Longitude_boundaries'    
-
-		addGridEntry(ff,'Cloud_Fraction_Mean'              ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Mean_Fraction)
-		addGridEntry(ff,'Cloud_Fraction_Standard_Deviation','none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Std_Fraction )
-		addGridEntry(ff,'Cloud_Fraction_Minimum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Min )
-		addGridEntry(ff,'Cloud_Fraction_Maximum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Max )
-		addGridEntry(ff,'Cloud_Fraction_Pixel_Counts'      ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Count) 
-		
-		ff.close()
-
-		print(l3name+'.hdf5 Saved!')
-
-	else:
-		print("Process {} finished".format(rank))
-		send_req = comm.Isend(results, dest=0, tag=0)
-		send_req.wait()
+	print(l3name+'.hdf5 Saved!')
