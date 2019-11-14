@@ -53,11 +53,11 @@ def read_MODIS(fname1,fname2,verbose=False): # READ THE HDF FILE
 
 	return lat,lon,CM
 
-def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs):
+def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop):
 	# This function is the data aggregation loops by number of files
-	hdfs = np.array(hdfs)
-	for j in hdfs:
-		print("File Number: {} / {}".format(j,hdfs[-1]))
+	fileloop = np.array(fileloop)
+	for j in fileloop:
+		print("File Number: {} / {}".format(j,fileloop[-1]))
 	
 		# Read Level-2 MODIS data
 		lat,lon,CM = read_MODIS(fname1[j],fname2[j])
@@ -234,25 +234,25 @@ if __name__ =='__main__':
 		# Distribute the day's loops into MPI ppns
 		files = np.arange(len(fname1)+remain)
 		tasks = np.array(np.split(files,size))
-		hdfs = tasks[rank]
+		fileloop = tasks[rank]
 	
 		if rank == (size-1): 
-			hdfs = np.delete(hdfs, np.arange(len(hdfs)-remain,len(hdfs)))
+			fileloop = np.delete(fileloop, np.arange(len(fileloop)-remain,len(fileloop)))
 	else:
 		# Distribute the day's loops into MPI ppns
 		files = np.arange(len(fname1)-len(fname1)%size)
 		tasks = np.array(np.split(files,size))
-		hdfs = tasks[rank]
+		fileloop = tasks[rank]
 	
 		if rank == (size-1): 
-			hdfs = np.append(hdfs, np.arange(len(files),len(files)+len(fname1)%size))
+			fileloop = np.append(fileloop, np.arange(len(files),len(files)+len(fname1)%size))
 
-	print("process {} aggregating files from {} to {}...".format(rank, hdfs[0],hdfs[-1]))
+	print("process {} aggregating files from {} to {}...".format(rank, fileloop[0],fileloop[-1]))
 	
 	# Start counting operation time
 	start_time = timeit.default_timer() 
 
-	results = np.asarray(run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs))
+	results = np.asarray(run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop))
 		
 	if rank == 0:
 		Count           += results[0,:]
