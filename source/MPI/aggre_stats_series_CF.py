@@ -55,7 +55,7 @@ def read_MODIS(fname1,fname2,verbose=False): # READ THE HDF FILE
 def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop):
 	# This function is the data aggregation loops by number of files
 	fileloop = np.array(fileloop)
-	for j in fileloop:
+	for j in range(10):#fileloop:
 		print("File Number: {} / {}".format(j,fileloop[-1]))
 	
 		# Read Level-2 MODIS data
@@ -263,11 +263,16 @@ if __name__ =='__main__':
 	PC.attrs['units']='degrees'
 	PC.attrs['long_name']='Longitude_boundaries'    
 
-	addGridEntry(ff,'Cloud_Fraction_Mean'              ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Mean_Fraction)
-	addGridEntry(ff,'Cloud_Fraction_Standard_Deviation','none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Std_Fraction )
-	addGridEntry(ff,'Cloud_Fraction_Minimum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Min )
-	addGridEntry(ff,'Cloud_Fraction_Maximum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Max )
-	addGridEntry(ff,'Cloud_Fraction_Pixel_Counts'      ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Count) 
+	if sts_switch[0] == True:
+		addGridEntry(ff,'Cloud_Fraction_Minimum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Min )
+	if sts_switch[1] == True:
+		addGridEntry(ff,'Cloud_Fraction_Maximum'           ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Fraction_Max )
+	if sts_switch[2] == True:
+		addGridEntry(ff,'Cloud_Fraction_Mean'              ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Mean_Fraction)	
+	if sts_switch[3] == True:
+		addGridEntry(ff,'Cloud_Fraction_Pixel_Counts'      ,'none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Count) 
+	if sts_switch[4] == True:
+		addGridEntry(ff,'Cloud_Fraction_Standard_Deviation','none','Cloud Fraction from Cloud Mask (cloudy & prob cloudy)',Std_Fraction )
 	
 	ff.close()
 
