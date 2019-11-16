@@ -15,7 +15,6 @@ import h5py
 import timeit
 import random
 import numpy as np
-from mpi4py import MPI
 from netCDF4 import Dataset
 
 def read_filelist(loc_dir,prefix,yr,day,fileformat):
@@ -166,8 +165,9 @@ if __name__ =='__main__':
 					'Standard_Deviation']
 
 		# Pass system arguments to the function
-		sts_switch = np.array(sys.argv[1:5],dtype=np.int)
+		sts_switch = np.array(sys.argv[1:6],dtype=np.int)
 		sts_switch = np.array((sts_switch == 1))
+		print(sts_switch)
 		
 	#-------------STEP 1: Set up the specific directory --------
 	MYD06_dir= '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
@@ -241,8 +241,8 @@ if __name__ =='__main__':
 	Mean_Fraction = Mean_Fraction.reshape([grid_lat,grid_lon])
 	Std_Fraction  =  Std_Fraction.reshape([grid_lat,grid_lon])
 
-	Fraction_Min = np.min(Fraction_Min).reshape([grid_lat,grid_lon])
-	Fraction_Max = np.max(Fraction_Max).reshape([grid_lat,grid_lon])
+	Fraction_Min = Fraction_Min.reshape([grid_lat,grid_lon])
+	Fraction_Max = Fraction_Max.reshape([grid_lat,grid_lon])
 
 	end_time = timeit.default_timer()
 
@@ -253,7 +253,7 @@ if __name__ =='__main__':
 	
 	# Create HDF5 file to store the result 
 	l3name='MOD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
-	ff=h5py.File(l3name+'.hdf5','w')
+	ff=h5py.File(l3name+'_series.hdf5','w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
