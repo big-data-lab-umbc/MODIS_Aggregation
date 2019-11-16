@@ -166,7 +166,7 @@ if __name__ =='__main__':
 					'Standard_Deviation']
 
 		# Pass system arguments to the function
-		sts_switch = np.array(sys.argv[1:5],dtype=np.int)
+		sts_switch = np.array(sys.argv[1:6],dtype=np.int)
 		sts_switch = np.array((sts_switch == 1))
 		
 	#-------------STEP 1: Set up the specific directory --------
