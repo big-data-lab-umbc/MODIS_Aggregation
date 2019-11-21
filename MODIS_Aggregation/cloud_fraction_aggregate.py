@@ -57,8 +57,7 @@ def aggregateOneFileData(M06_file, M03_file):
 
 def displayOutput(cf):
     # write output into an nc file
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
+    cf.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
     print("Created netcdf file monthlyCloudFraction-file-level-for-loop.nc")
 
     # write output into a figure
@@ -106,4 +105,4 @@ if __name__ == '__main__':
     total = t1 - t0
     print("total execution time (Seconds):" + str(total))
     # display the output
-    displayOutput(cf)
+    displayOutput(xr.DataArray(cf))
