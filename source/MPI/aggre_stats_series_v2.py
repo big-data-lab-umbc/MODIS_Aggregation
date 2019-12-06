@@ -113,7 +113,7 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,sts_switch,s
 		grid_data[key+'_'+sts_name[4]][z] += ave_val**2
 
 	#1D Histogram 
-	if (sts_switch[5] == True) | (sts_switch[6] == True):	
+	if sts_switch[5] == True:	
 		hist_idx1 = ((ave_val-lobnd1)/bin_interval1).astype(int)
 		if hist_idx1 <= (grid_data[key+'_'+sts_name[5]].shape[0]-1): 
 			hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[0]-1)
@@ -123,6 +123,13 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,sts_switch,s
 	
 	#2D Histogram 
 	if sts_switch[6] == True:
+
+		hist_idx1 = ((ave_val-lobnd1)/bin_interval1).astype(int)
+		if hist_idx1 <= (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1): 
+			hist_idx1 = (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1)
+		if hist_idx1 >= 0: 
+			hist_idx1 = 0
+
 		hist_idx2 = ((ave_val-lobnd2)/bin_interval2).astype(int)
 		if hist_idx2 <= (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1): 
 			hist_idx2 = (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1)
@@ -268,7 +275,7 @@ if __name__ =='__main__':
 	
 	#-------------STEP 0: Read the input from User --------
 	# checking user input
-	if (len(sys.argv) != 9) & (len(sys.argv) != 16):
+	if (len(sys.argv) != 9) & (len(sys.argv) != 12) & (len(sys.argv) != 16):
 		print("Wrong user input")
 		print("usage: python aggre_stats_mpi.py <1/0> <1/0> <1/0> \
 												<1/0> <1/0> <1/0> \
@@ -296,16 +303,21 @@ if __name__ =='__main__':
 			bin_num1 = np.int(sys.argv[9])
 			lobnd1   = np.float(sys.argv[10])
 			upbnd1   = np.float(sys.argv[11])
+		elif sts_switch[6] == True:	
+			bin_num1 = np.int(sys.argv[9])
+			lobnd1   = np.float(sys.argv[10])
+			upbnd1   = np.float(sys.argv[11])
+
 			hist_var = sys.argv[12]
-			if sts_switch[6] == True:	
-				bin_num2 = np.int(sys.argv[13])	
-				lobnd2   = np.float(sys.argv[14])
-				upbnd2   = np.float(sys.argv[15])
+			bin_num2 = np.int(sys.argv[13])	
+			lobnd2   = np.float(sys.argv[14])
+			upbnd2   = np.float(sys.argv[15])
+			
 			# Read the joint histogram names from the variable name list
 			text_file = open(hist_var, "r")
 			histnames = text_file.read().split('\n')
 		else:
-			bin_num1,bin_num2,hist_var,lobnd1,upbnd1,lobnd2,upbnd2 = 0,0,0,0,0,0   
+			bin_num1,bin_num2,hist_var,lobnd1,upbnd1,lobnd2,upbnd2 = 0,0,0,0,0,0,0
 	
 	#-------------STEP 1: Set up the specific directory --------
 	MYD06_dir= '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
@@ -345,11 +357,13 @@ if __name__ =='__main__':
 			grid_data[key+'_'+sts_name[2]] = np.zeros(grid_lat*grid_lon)
 			grid_data[key+'_'+sts_name[3]] = np.zeros(grid_lat*grid_lon)
 			grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
-		if (sts_switch[5] == True) | (sts_switch[6] == True):
+		if sts_switch[5] == True:
 			hist_bnd1 = np.linspace(lobnd1,upbnd1,bin_num1+1)
 			bin_interval1 = (upbnd1 - lobnd1)/bin_num1
 			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1))
 		if sts_switch[6] == True:
+			hist_bnd1 = np.linspace(lobnd1,upbnd1,bin_num1+1)
+			bin_interval1 = (upbnd1 - lobnd1)/bin_num1
 			hist_bnd2 = np.linspace(lobnd2,upbnd2,bin_num2+1)
 			bin_interval2 = (upbnd2 - lobnd2)/bin_num2
 			grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]] = np.zeros((grid_lat*grid_lon,bin_num1,bin_num2))
@@ -449,4 +463,4 @@ if __name__ =='__main__':
 	
 	ff.close()
 
-	print(l3name+'.h5 Saved!')
+	print(l3name+'_test04.h5 Saved!')
