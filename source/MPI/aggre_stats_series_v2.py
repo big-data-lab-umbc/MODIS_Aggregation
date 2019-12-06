@@ -367,7 +367,7 @@ if __name__ =='__main__':
 			hist_bnd2 = np.linspace(lobnd2,upbnd2,bin_num2+1)
 			bin_interval2 = (upbnd2 - lobnd2)/bin_num2
 			grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]] = np.zeros((grid_lat*grid_lon,bin_num1,bin_num2))
-
+			
 	# Sort the dictionary by alphabetizing
 	grid_data = OrderedDict(sorted(grid_data.items(), key=lambda x: x[0]))
 	
@@ -409,8 +409,9 @@ if __name__ =='__main__':
 	# sts_name[6]: joint histogram
 
 	sts_idx = np.array(np.where(sts_switch == True))[0]
+	print(sts_idx)
 	for key in varnames_CF:
-		for i in range(sts_idx.shape[0]):
+		for i in sts_idx:
 			if i == 0:
 				grid_data[key+'_'+sts_name[0]] = grid_data[key+'_'+sts_name[0]].reshape([grid_lat,grid_lon])
 			elif i == 1:
@@ -423,9 +424,9 @@ if __name__ =='__main__':
 				grid_data[key+'_'+sts_name[4]] = (grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2
 				grid_data[key+'_'+sts_name[4]] =  grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 			elif i == 5:
-				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon])
+				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1])
 			elif i == 6:
-				grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]] = grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].reshpe([grid_lat,grid_lon,bin_num[0],bin_num[1]])
+				grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]] = grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].reshape([grid_lat,grid_lon,bin_num1,bin_num2])
 	
 	end_time = timeit.default_timer()
 
