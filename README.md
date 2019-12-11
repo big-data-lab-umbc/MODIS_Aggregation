@@ -18,6 +18,7 @@ The code is tested with Python 3.7
 - PhD student: Redwan Walid, Department of Information Systems, UMBC
 - MS student: [Savio Kay](https://saviokay.com), Department of Information Systems, UMBC
 - MS student: Deepak Prakash, Department of Information Systems, UMBC
+- MS student: Lakshmi Priyanka Kandoor, Department of Information Systems, UMBC
 
 # Acknowledgement
 The project is mainly funded by NASA CMAC program
