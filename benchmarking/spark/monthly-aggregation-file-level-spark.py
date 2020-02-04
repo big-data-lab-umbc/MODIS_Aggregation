@@ -49,21 +49,16 @@ def aggregateOneFileData(M06_file, M03_file):
     return cloud_pix, total_pix
 
 
-def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
-    f=h5py.File(out_name,'w')
-    PCentry=f.create_dataset('CF',data=total_cloud_fraction)
-    PCentry.dims[0].label='lat_bnd'
-    #PCentry.dims[1].label='lon_bnd'
-    
-    PC=f.create_dataset('lat_bnd',data=lat_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Latitude_boundaries'
-    
-    PC=f.create_dataset('lon_bnd',data=lon_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Longitude_boundaries'
-    f.close()
-    print(out_name+' Saved!!')
+def save_output():
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    plt.figure(figsize=(14, 7))
+    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+    plt.xlabel("Longitude", fontsize=14)
+    plt.ylabel("Latitude", fontsize=14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
 
 if __name__ =='__main__':
 
@@ -90,8 +85,9 @@ if __name__ =='__main__':
     total_cloud_fraction = (global_cloud_pix/global_total_pix)
     print("total_cloud_fraction:" + str(total_cloud_fraction))
     print("total_cloud_fraction.shape:" + str(total_cloud_fraction.shape))
+    
     #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
-    save_hdf('cloud_fraction_mean.hdf',total_cloud_fraction,lat_bnd,lon_bnd)
+    save_output()
 
     #calculate execution time
     t1 = time.time()

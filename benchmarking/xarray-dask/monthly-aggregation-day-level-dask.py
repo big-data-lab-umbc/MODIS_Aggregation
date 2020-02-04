@@ -51,6 +51,17 @@ def aggregateOneDayData(z):
     return cloud_pix, total_pix
 
 
+def save_output():
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    plt.figure(figsize=(14, 7))
+    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+    plt.xlabel("Longitude", fontsize=14)
+    plt.ylabel("Latitude", fontsize=14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
+
 if __name__ == '__main__':
 
     cluster = SLURMCluster(cores=1, memory='50 GB', project='pi_jianwu',\
@@ -103,18 +114,9 @@ if __name__ == '__main__':
 
     client.close()
 
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
-
-    #get time in seconds.
+    save_output()
+    
+    #calculate execution time
     t1 = time.time()
-    total = t1 - t0
+    total = t1-t0
     print("total execution time (Seconds):" + str(total))
-
-    plt.figure(figsize=(14, 7))
-    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
-    plt.xlabel("Longitude", fontsize=14)
-    plt.ylabel("Latitude", fontsize=14)
-    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
-    plt.colorbar()
-    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
