@@ -67,7 +67,7 @@ if __name__ == '__main__':
             .appName("MODIS_agg")\
             .getOrCreate()
     sc = spark.sparkContext
-    global_cloud_pix, global_total_pix = sc.parallelize(z, 31).map(lambda x: aggregateOneFileData(x)).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
+    global_cloud_pix, global_total_pix = sc.parallelize(z, 31).map(lambda x: aggregateOneDayData(x)).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
     spark.stop() # Stop Spark
     lat_bnd = np.arange(-90,90,1)
     lon_bnd = np.arange(-180,180,1)
