@@ -14,6 +14,10 @@ def aggregateOneDayData(z):
             'SV start time', 'EV center time', 'Mirror side', 'SD Sun zenith', 'SD Sun azimuth',
             'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
             'impulse_enc', 'impulse_time', 'thermal_correction', 'SensorAzimuth']
+            
+            
+    total_pix = np.zeros((180, 360))
+    cloud_pix = np.zeros((180, 360))
 
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + "z" + "*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + "z" + "*"))

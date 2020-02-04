@@ -20,6 +20,9 @@ def aggregateOneDayData(z):
 
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + "z" + "*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + "z" + "*"))
+    
+    total_pix = np.zeros((180, 360))
+    cloud_pix = np.zeros((180, 360))
 
     for x,y in zip(M06_files,M03_files):
 
