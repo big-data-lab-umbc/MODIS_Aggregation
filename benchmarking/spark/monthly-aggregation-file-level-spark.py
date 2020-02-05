@@ -4,6 +4,7 @@ import glob
 import matplotlib.pyplot as plt
 import time
 import h5py
+import xarray as xr
 from pyspark.sql import SparkSession
 
 def aggregateOneFileData(M06_file, M03_file):
