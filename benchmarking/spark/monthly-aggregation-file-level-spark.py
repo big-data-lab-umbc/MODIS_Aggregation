@@ -49,7 +49,7 @@ def aggregateOneFileData(M06_file, M03_file):
     return cloud_pix, total_pix
 
 
-def save_output():
+def save_output(cf):
     cf1 = xr.DataArray(cf)
     cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
     plt.figure(figsize=(14, 7))
@@ -62,8 +62,10 @@ def save_output():
 
 if __name__ =='__main__':
 
-    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
-    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    #M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    #M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     file_pairs = zip(M06_files, M03_files)
@@ -87,7 +89,7 @@ if __name__ =='__main__':
     print("total_cloud_fraction.shape:" + str(total_cloud_fraction.shape))
     
     #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
-    save_output()
+    save_output(total_cloud_fraction)
 
     #calculate execution time
     t1 = time.time()
