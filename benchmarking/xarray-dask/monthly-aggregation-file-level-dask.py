@@ -58,7 +58,7 @@ def aggregateOneFileData(M06_file, M03_file):
         
     return cloud_pix, total_pix
 
-def save_output():
+def save_output(cf):
     cf1 = xr.DataArray(cf)
     cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
     plt.figure(figsize=(14, 7))
@@ -105,7 +105,7 @@ cluster = SLURMCluster(cores=1, memory='50 GB', project='pi_jianwu',\
     client.close()
 
     #write output into an nc file
-    save_output()
+    save_output(cf)
 
     #calculate execution time
     t1 = time.time()
