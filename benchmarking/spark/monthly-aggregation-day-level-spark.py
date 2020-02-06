@@ -4,6 +4,7 @@ import glob
 import matplotlib.pyplot as plt
 import time
 import h5py
+import xarray as xr
 from pyspark.sql import SparkSession
 
 def aggregateOneDayData(z):
@@ -64,7 +65,7 @@ def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
     f.close()
     print(out_name+' Saved!!')
     
-def save_output():
+def save_output(cf):
     cf1 = xr.DataArray(cf)
     cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
     plt.figure(figsize=(14, 7))
@@ -107,7 +108,7 @@ if __name__ == '__main__':
     print("total_cloud_fraction:" + str(total_cloud_fraction))
     print("total_cloud_fraction.shape:" + str(total_cloud_fraction.shape))
     #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
-    save_output()
+    save_output(total_cloud_fraction)
 
     #calculate execution time
     t1 = time.time()

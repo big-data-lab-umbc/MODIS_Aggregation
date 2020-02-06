@@ -38,7 +38,7 @@ if [[ $nodes == *","* ]]; then
       start_node=$(echo $element| cut -d'-' -f 1)
       end_node=$(echo $element| cut -d'-' -f 2)
       #echo "start_node:$start_node, end_node:$end_node"
-      for sub_element in $(seq $start_node $end_node) ; do
+      for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
         if [ "cnode$sub_element" != "$master" ]; then
           echo 'branch 1'
           worker_node=$(echo 'cnode'$sub_element)
@@ -70,7 +70,7 @@ if [[ $nodes == *","* ]]; then
 else
   start_node=$(echo $nodes| cut -d'-' -f 1)
   end_node=$(echo $nodes| cut -d'-' -f 2)
-  for sub_element in $(seq $start_node $end_node) ; do
+  for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
     if [ "cnode$sub_element" != "$master" ]; then
           echo 'branch 3'
           worker_node=$(echo 'cnode'$sub_element)
