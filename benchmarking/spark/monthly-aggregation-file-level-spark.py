@@ -16,7 +16,8 @@ def aggregateOneFileData(M06_file, M03_file):
     Returns:
         (cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
     """
-    
+    print(M06_file)
+    print(M03_file) 
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
     #read 'Cloud_Mask_1km' variable from the MYD06_L2 file, whose shape is (2030, 1354)
@@ -63,14 +64,16 @@ def save_output(cf):
 
 if __name__ =='__main__':
 
-    M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
-    M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
-    #M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
-    #M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    #M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
+    file_num = len(M06_files)
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     file_pairs = zip(M06_files, M03_files)
-    print(file_pairs)
+    #print(list(file_pairs))
+    #print(len(list(file_pairs)))    
 
     t0 = time.time()
     
@@ -80,7 +83,7 @@ if __name__ =='__main__':
             .appName("MODIS_agg")\
             .getOrCreate()
     sc = spark.sparkContext
-    global_cloud_pix, global_total_pix = sc.parallelize(list(file_pairs),3).map(lambda x: aggregateOneFileData(x[0],x[1])).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
+    global_cloud_pix, global_total_pix = sc.parallelize(list(file_pairs), file_num).map(lambda x: aggregateOneFileData(x[0],x[1])).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
     spark.stop() # Stop Spark
     lat_bnd = np.arange(-90,90,1)
     lon_bnd = np.arange(-180,180,1)

@@ -1,17 +1,19 @@
 #!/bin/bash
 #SBATCH --job-name=sparkJob
-#SBATCH --partition=batch
-#SBATCH --nodes=2
+#SBATCH --partition=high_mem
+#SBATCH --nodes=3
 #SBATCH --exclusive
-#SBATCH --constraint=hpcf2013
-#SBTACH --mem=64000
-#SBATCH --qos=normal
+#SBATCH --qos=normal+
 #SBATCH --output=slurm-%x-%j-%u.out
 #SBATCH --error=slurm-%x-%j-%u.out
 
+export CONDA_PREFIX=/umbc/xfs1/cybertrn/common/Softwares/anaconda3/
+export PYSPARK_PYTHON=$CONDA_PREFIX/bin/python
+export PYSPARK_DRIVER_PYTHON=$CONDA_PREFIX/bin/python
+
 SPARK=/umbc/xfs1/cybertrn/common/Softwares/spark/spark-2.4.0-bin-hadoop2.7
 MY_SPARK=/home/jianwu/jianwu_common/pei_spark/my-spark-jianwu
-SPARK_PYTHON_FILE=$SPARK/examples/src/main/python/pi.py
+SPARK_PYTHON_FILE=/home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github/MODIS-Aggregation/benchmarking/spark/monthly-aggregation-file-level-spark.py
 
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
@@ -38,7 +40,7 @@ if [[ $nodes == *","* ]]; then
       start_node=$(echo $element| cut -d'-' -f 1)
       end_node=$(echo $element| cut -d'-' -f 2)
       #echo "start_node:$start_node, end_node:$end_node"
-      for sub_element in $(seq $start_node $end_node) ; do
+      for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
         if [ "cnode$sub_element" != "$master" ]; then
           echo 'cnode'$sub_element >> $MY_SPARK/conf/slaves
         fi
@@ -52,7 +54,7 @@ if [[ $nodes == *","* ]]; then
 else
   start_node=$(echo $nodes| cut -d'-' -f 1)
   end_node=$(echo $nodes| cut -d'-' -f 2)
-  for sub_element in $(seq $start_node $end_node) ; do
+  for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
     if [ "cnode$sub_element" != "$master" ]; then
           echo 'cnode'$sub_element >> $MY_SPARK/conf/slaves
     fi
@@ -78,13 +80,3 @@ sleep 5
 host=$(hostname)
 
 
-#Step 4: Submit your Spark job and wait for its finish
-echo "time $SPARK/bin/spark-submit --master spark://$master:7077 --driver-memory 60g --executor-memory 4g $SPARK_PYTHON_FILE" 10000
-
-echo "time $SPARK/bin/spark-submit --master spark://$master:7077 --driver-memory 60g --executor-memory 4g $SPARK_PYTHON_FILE" 10000 > $EXE_LOG_PATH_MY_SPARK/$current_time-script-log.txt
-
-(time $SPARK/bin/spark-submit --master spark://$master:7077 --driver-memory 60g --executor-memory 60g $SPARK_PYTHON_FILE 10000 > $EXE_LOG_PATH_MY_SPARK/$current_time-log.txt) 2> $EXE_LOG_PATH_MY_SPARK/$current_time-time.txt
-
-#Step 5: Stop Spark at the end
-sleep 5
-$SPARK/sbin/stop-all.sh

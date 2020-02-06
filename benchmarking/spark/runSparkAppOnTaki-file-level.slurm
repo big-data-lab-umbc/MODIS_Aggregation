@@ -1,22 +1,24 @@
 #!/bin/bash
 #SBATCH --job-name=sparkJob
-#SBATCH --partition=batch
-#SBATCH --nodes=2
+#SBATCH --partition=high_mem
+#SBATCH --nodes=3
 #SBATCH --exclusive
-#SBATCH --constraint=hpcf2013
-#SBTACH --mem=64000
-#SBATCH --qos=normal
+#SBATCH --qos=normal+
 #SBATCH --output=slurm-%x-%j-%u.out
 #SBATCH --error=slurm-%x-%j-%u.out
 
+export CONDA_PREFIX=/umbc/xfs1/cybertrn/common/Softwares/anaconda3/
+export PYSPARK_PYTHON=$CONDA_PREFIX/bin/python
+export PYSPARK_DRIVER_PYTHON=$CONDA_PREFIX/bin/python
+
 SPARK=/umbc/xfs1/cybertrn/common/Softwares/spark/spark-2.4.0-bin-hadoop2.7
 MY_SPARK=/home/jianwu/jianwu_common/pei_spark/my-spark-jianwu
-SPARK_PYTHON_FILE=./monthly-aggregation-file-level-spark.py
+SPARK_PYTHON_FILE=/home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github/MODIS-Aggregation/benchmarking/spark/monthly-aggregation-file-level-spark.py
 
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
 echo "Current Time : $current_time"
-MY_SPARK=$MY_SPARK/$current_time
+MY_SPARK=$MY_SPARK/$SLURM_JOB_ID-$current_time
 mkdir -p $MY_SPARK
 EXE_LOG_PATH_MY_SPARK=$MY_SPARK/logs
 cp -r $SPARK/conf $MY_SPARK
@@ -79,11 +81,12 @@ host=$(hostname)
 
 
 #Step 4: Submit your Spark job and wait for its finish
-echo "time $SPARK/bin/spark-submit --master spark://$master:7077 --driver-memory 60g --executor-memory 4g $SPARK_PYTHON_FILE" 10000
+echo "time $SPARK/bin/spark-submit --num-executors=30 --executor-cores=2 --master spark://$master:7077 --driver-memory 60g --executor-memory 4g $SPARK_PYTHON_FILE"
+echo "log files of this job can be found at $MY_SPARK"
 
-echo "time $SPARK/bin/spark-submit --master spark://$master:7077 --driver-memory 60g --executor-memory 4g $SPARK_PYTHON_FILE" 10000 > $EXE_LOG_PATH_MY_SPARK/$current_time-script-log.txt
+echo "time $SPARK/bin/spark-submit --num-executors=30 --executor-cores=2 --master spark://$master:7077 --driver-memory 60g --executor-memory 4g $SPARK_PYTHON_FILE" > $EXE_LOG_PATH_MY_SPARK/$current_time-script-log.txt
 
-(time $SPARK/bin/spark-submit --master spark://$master:7077 --driver-memory 60g --executor-memory 60g $SPARK_PYTHON_FILE 10000 > $EXE_LOG_PATH_MY_SPARK/$current_time-log.txt) 2> $EXE_LOG_PATH_MY_SPARK/$current_time-time.txt
+(time $SPARK/bin/spark-submit --num-executors=30 --executor-cores=2 --master spark://$master:7077 --driver-memory 60g --executor-memory 12g $SPARK_PYTHON_FILE > $EXE_LOG_PATH_MY_SPARK/$current_time-log.txt) 2> $EXE_LOG_PATH_MY_SPARK/$current_time-time.txt
 
 #Step 5: Stop Spark at the end
 sleep 5
