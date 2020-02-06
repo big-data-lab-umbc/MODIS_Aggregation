@@ -20,8 +20,12 @@ def aggregateOneDayData(z):
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
 
-    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + "z" + "*"))
-    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + "z" + "*"))
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + z + "*"))
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + z + "*"))
+
+    print(M03_files)
 
     for x,y in zip(M06_files,M03_files):
 
@@ -79,12 +83,16 @@ def save_output(cf):
 
 if __name__ == '__main__':
 
-    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
-    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    #M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
+    #M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
+    #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    #M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     file_pairs = zip(M06_files, M03_files)
-    print(file_pairs)
+    #print(file_pairs)
 
     index = 31
     y = [str(x).zfill(3) for x in range(index + 1)]

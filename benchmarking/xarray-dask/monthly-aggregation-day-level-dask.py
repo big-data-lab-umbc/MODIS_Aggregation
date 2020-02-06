@@ -18,8 +18,10 @@ def aggregateOneDayData(z):
             'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
             'impulse_enc', 'impulse_time', 'thermal_correction', 'SensorAzimuth']
 
-    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + "z" + "*"))
-    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + "z" + "*"))
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + z + "*"))
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + z + "*"))
     
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
