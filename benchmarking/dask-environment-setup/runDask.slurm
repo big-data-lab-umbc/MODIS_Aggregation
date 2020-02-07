@@ -1,11 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=daskJob_maxm_n12
-#SBATCH --partition=batch
-#SBATCH --nodes=12
+#SBATCH --job-name=daskJob_maxm_n8_p8_day
+#SBATCH --partition=high_mem
+#SBATCH --nodes=8
 #SBATCH --ntasks-per-node=1
 #SBATCH --exclusive
 #SBATCH --mem=MaxMemPerNode
-#SBATCH --constraint=hpcf2013
 #SBATCH --qos=normal+
 #SBATCH --output=z_slurm-%x-%j-%u.out
 #SBATCH --error=z_slurm-%x-%j-%u.out
@@ -37,7 +36,7 @@ if [[ $nodes == *","* ]]; then
     if [[ $element == *"-"* ]]; then
       start_node=$(echo $element| cut -d'-' -f 1)
       end_node=$(echo $element| cut -d'-' -f 2)
-      #echo "start_node:$start_node, end_node:$end_node"
+      echo "start_node:$start_node, end_node:$end_node"
       for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
         if [ "cnode$sub_element" != "$master" ]; then
           echo 'branch 1'
@@ -70,6 +69,7 @@ if [[ $nodes == *","* ]]; then
 else
   start_node=$(echo $nodes| cut -d'-' -f 1)
   end_node=$(echo $nodes| cut -d'-' -f 2)
+  echo "start_node:$start_node, end_node:$end_node"
   for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
     if [ "cnode$sub_element" != "$master" ]; then
           echo 'branch 3'
@@ -90,4 +90,62 @@ fi
 which python
 sleep 20
 echo "Starting running python file"
-/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python modis.py $master_ip
+/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python modis.py $master_ip 
+echo "call kill worker script"
+
+if [[ $nodes == *","* ]]; then
+  for element in ${nodes//,/ } ; do
+    echo "element:$element"
+    if [[ $element == *"-"* ]]; then
+      start_node=$(echo $element| cut -d'-' -f 1)
+      end_node=$(echo $element| cut -d'-' -f 2)
+      echo "start_node:$start_node, end_node:$end_node"
+      for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
+        if [ "cnode$sub_element" != "$master" ]; then
+          echo 'branch 1'
+          worker_node=$(echo 'cnode'$sub_element)
+          echo $worker_node
+          echo 'cnode'$sub_element
+          sleep 5
+          echo "worker script: ssh ${worker_node}"
+          ssh ${worker_node} ./dataaggre/kill_worker.bash ${master_ip} &
+          sleep 5
+          echo "exit worker node: $worker_node"
+        fi
+      done
+    else
+      if [ "cnode$element" != "$master" ]; then
+        echo 'branch 2'
+        worker_node=$(echo 'cnode'$element)
+        echo $worker_node
+        echo 'cnode'$element
+        sleep 5
+        echo "worker script: ssh ${worker_node}"
+        ssh ${worker_node} ./dataaggre/kill_worker.bash ${master_ip} &
+        sleep 5
+        echo "exit worker node: $worker_node"
+      fi
+    fi
+  done
+else
+  start_node=$(echo $nodes| cut -d'-' -f 1)
+  end_node=$(echo $nodes| cut -d'-' -f 2)
+  echo "start_node:$start_node, end_node:$end_node"
+  for sub_element in $(seq -f "%03g" $start_node $end_node) ; do
+    if [ "cnode$sub_element" != "$master" ]; then
+          echo 'branch 3'
+          worker_node=$(echo 'cnode'$sub_element)
+          echo $worker_node
+          echo "ssh into worker node: $worker_node"
+          sleep 5
+          echo "worker script: ssh ${worker_node}"
+          ssh ${worker_node} ./dataaggre/kill_worker.bash ${master_ip} &
+          sleep 5
+          echo "exit worker node: $worker_node"
+          #dask-worker $worker_node:8786
+    fi
+  done
+fi
+
+echo "call kill_worker finishes"
+echo "End running python file"

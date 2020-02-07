@@ -5,7 +5,7 @@ ps aux | grep -ie dask-worker | awk '{print $2}' | xargs kill -9
 echo "start new worker"
 date
 hostname
-/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/dask-worker $1:8786 --nthreads 1 --memory-limit=0 --death-timeout 60
+/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/dask-worker $1:8786 --nprocs 8 --nthreads 1 --memory-limit 64.00GB --death-timeout 60
 date
 hostname
 echo "finish start_worker"
