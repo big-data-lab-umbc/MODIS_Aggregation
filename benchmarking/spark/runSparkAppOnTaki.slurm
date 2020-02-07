@@ -16,7 +16,7 @@ SPARK_PYTHON_FILE=$SPARK/examples/src/main/python/pi.py
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
 echo "Current Time : $current_time"
-MY_SPARK=$MY_SPARK/$current_time
+MY_SPARK=$MY_SPARK/$SLURM_JOB_ID-$current_time
 mkdir -p $MY_SPARK
 EXE_LOG_PATH_MY_SPARK=$MY_SPARK/logs
 cp -r $SPARK/conf $MY_SPARK

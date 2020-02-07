@@ -17,5 +17,15 @@
 #								  <Joint Histogram Name List> <Bin Number for Joint Histogram> 
 #								  <lower Boundary for joint histogram> <upper Boundary for joint histogram> 
 
-python aggre_stats_series_v2.py 1 1 1 1 1 0 1 filename.dat 21 150 320 histname.dat 4 0 1100
+# Example 1: Calculate Minimum, Maximum, Mean, Pixel Counts, Standard Deviation, Joint Histogram. 
+#			 Variables in filename.dat: cloud_top_pressure, cloud_top_temperature, Cloud_Optical_Thickness.
+#			 Bin number for histogram counts is 21. 
+#			 Boundary for histogram is 150 & 320 (cloud_top_temperature)
+#			 Variables in histname.dat: cloud_top_temperature, cloud_top_pressure
+#			 Bin number for the second variable for joint histrogram is 4.
+#			 Boundary for the second variable for joint histogram is 0 & 1100 (cloud_top_pressure).
+
+python aggre_stats_series_v2.py 1 1 1 1 1 0 1 filename.dat 21 150 320 histname.dat 4 0 1100 
+
+
 
