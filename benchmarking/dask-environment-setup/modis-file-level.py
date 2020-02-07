@@ -74,23 +74,22 @@ if __name__ == '__main__':
     time.sleep(20)
     print("start read the data file")
 
-    # M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-    # M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    t0 = time.time()
+
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     #M03_dir = "/umbc/xfs1/cybertrn/users/xinh1/xinh/MODIS-Aggregation/input-data/MYD03/"
     #M06_dir = "/umbc/xfs1/cybertrn/users/xinh1/xinh/MODIS-Aggregation/input-data/MYD06/"
-    M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
-    M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    #M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
+    #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
     #M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     #M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
 
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
-    t0 = time.time()
 
     tt = client.map(aggregateOneFileData, M06_files, M03_files)
-
-
     cloud_pix_global = np.zeros((180, 360))
     total_pix_global = np.zeros((180, 360))
 

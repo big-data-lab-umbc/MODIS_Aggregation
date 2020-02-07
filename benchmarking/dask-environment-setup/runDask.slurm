@@ -90,7 +90,7 @@ fi
 which python
 sleep 20
 echo "Starting running python file"
-/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python /home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/xarray-dask/monthly-aggregation-file-level-dask.py $master_ip 
+/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python /home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/modis-file-level.py $master_ip 
 echo "call kill worker script"
 
 if [[ $nodes == *","* ]]; then
