@@ -147,5 +147,8 @@ else
   done
 fi
 
+echo "delete old schedulers after py run"
+ps aux | grep -ie dask-scheduler | awk '{print $2}' | xargs kill -9
+
 echo "call kill_worker finishes"
 echo "End running python file"
