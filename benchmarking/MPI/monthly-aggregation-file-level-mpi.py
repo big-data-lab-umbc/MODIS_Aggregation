@@ -106,8 +106,8 @@ def save_output(cf):
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
 
-        # Start counting operation time
-        start_time = timeit.default_timer()
+	# Start counting operation time
+	start_time = timeit.default_timer()
 			
 	#-------------STEP 1: Read All Files --------
 	M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
@@ -182,7 +182,7 @@ if __name__ =='__main__':
 		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 		Mean_Fraction = (total_pix / cloud_pix)
 
-                end_time = timeit.default_timer()
+		end_time = timeit.default_timer()
 		
 		# Create HDF5 file to store the result 
 		save_output(Mean_Fraction)
