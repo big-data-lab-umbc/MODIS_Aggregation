@@ -10,4 +10,4 @@
 #SBATCH --account=pi_jianwu
 #SBATCH --exclusive
 
-python3 monthly-aggregation-file-level-dask.py
+srun /umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python monthly-aggregation-file-level-dask.py

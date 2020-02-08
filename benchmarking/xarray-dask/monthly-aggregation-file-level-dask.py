@@ -58,9 +58,21 @@ def aggregateOneFileData(M06_file, M03_file):
         
     return cloud_pix, total_pix
 
+def save_output(cf):
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    plt.figure(figsize=(14, 7))
+    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+    plt.xlabel("Longitude", fontsize=14)
+    plt.ylabel("Latitude", fontsize=14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
+
 if __name__ == '__main__':
 
-    cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
+cluster = SLURMCluster(cores=1, memory='50 GB', project='pi_jianwu',\
+                       queue='batch', walltime='02:00:00', job_extra=['--exclusive', '--qos=medium+'])
 
     cluster.scale(16)
 
@@ -93,19 +105,11 @@ if __name__ == '__main__':
     client.close()
 
     #write output into an nc file
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-file-level-parallelization.nc")
+    save_output(cf)
 
     #calculate execution time
     t1 = time.time()
     total = t1-t0
     print("total execution time (Seconds):" + str(total))
 
-    #write output into a figure
-    plt.figure(figsize=(14,7))
-    plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
-    plt.xlabel("Longitude", fontsize = 14)
-    plt.ylabel("Latitude", fontsize = 14)
-    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize = 16)
-    plt.colorbar()
-    plt.savefig("monthlyCloudFraction-file-level-parallelization.png")
+

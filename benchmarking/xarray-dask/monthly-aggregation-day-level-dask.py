@@ -18,8 +18,13 @@ def aggregateOneDayData(z):
             'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
             'impulse_enc', 'impulse_time', 'thermal_correction', 'SensorAzimuth']
 
-    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + "z" + "*"))
-    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + "z" + "*"))
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
+    M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + z + "*"))
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + z + "*"))
+    
+    total_pix = np.zeros((180, 360))
+    cloud_pix = np.zeros((180, 360))
 
     for x,y in zip(M06_files,M03_files):
 
@@ -48,9 +53,21 @@ def aggregateOneDayData(z):
     return cloud_pix, total_pix
 
 
+def save_output(cf):
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    plt.figure(figsize=(14, 7))
+    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+    plt.xlabel("Longitude", fontsize=14)
+    plt.ylabel("Latitude", fontsize=14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
+
 if __name__ == '__main__':
 
-    cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
+    cluster = SLURMCluster(cores=1, memory='50 GB', project='pi_jianwu',\
+            queue='batch', walltime='02:00:00', job_extra=['--exclusive', '--qos=medium+'])
 
     cluster.scale(16)
 
@@ -99,18 +116,9 @@ if __name__ == '__main__':
 
     client.close()
 
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
-
-    #get time in seconds.
+    save_output(cf)
+    
+    #calculate execution time
     t1 = time.time()
-    total = t1 - t0
+    total = t1-t0
     print("total execution time (Seconds):" + str(total))
-
-    plt.figure(figsize=(14, 7))
-    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
-    plt.xlabel("Longitude", fontsize=14)
-    plt.ylabel("Latitude", fontsize=14)
-    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
-    plt.colorbar()
-    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
