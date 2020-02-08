@@ -94,17 +94,20 @@ def run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,f
 def save_output(cf):
 	cf1 = xr.DataArray(cf)
 	cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
-	#plt.figure(figsize=(14, 7))
-	#plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
-	#plt.xlabel("Longitude", fontsize=14)
-	#plt.ylabel("Latitude", fontsize=14)
-	#plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
-	#plt.colorbar()
-	#plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
+	plt.figure(figsize=(14, 7))
+	plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+	plt.xlabel("Longitude", fontsize=14)
+	plt.ylabel("Latitude", fontsize=14)
+	plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+	plt.colorbar()
+	plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
 
 
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
+
+        # Start counting operation time
+        start_time = timeit.default_timer()
 			
 	#-------------STEP 1: Read All Files --------
 	M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
@@ -161,7 +164,7 @@ if __name__ =='__main__':
 	print("process {} aggregating files from {} to {}...".format(rank, fileloop[0],fileloop[-1]))
 	
 	# Start counting operation time
-	start_time = timeit.default_timer() 
+	# start_time = timeit.default_timer() 
 
 	results = np.asarray(run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop))
 		
@@ -178,11 +181,13 @@ if __name__ =='__main__':
 
 		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 		Mean_Fraction = (total_pix / cloud_pix)
+
+                end_time = timeit.default_timer()
 		
 		# Create HDF5 file to store the result 
 		save_output(Mean_Fraction)
 
-		end_time = timeit.default_timer()
+		# end_time = timeit.default_timer()
 
 		print('Mean_Fraction:')
 		print( Mean_Fraction  )
