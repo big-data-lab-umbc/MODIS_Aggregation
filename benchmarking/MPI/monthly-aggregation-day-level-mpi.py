@@ -21,9 +21,9 @@ from mpi4py import MPI
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 
-def read_filelist(loc_dir,prefix,yr,day,fileformat):
+def read_filelist(loc_dir,prefix,day,fileformat):
 	# Read the filelist in the specific directory
-	str = os.popen("ls "+ loc_dir + prefix + yr + day + "*."+fileformat).read()
+	str = os.popen("ls "+ loc_dir + prefix + day + "*."+fileformat).read()
 	fname = np.array(str.split("\n"))
 	fname = np.delete(fname,len(fname)-1)
 
@@ -59,48 +59,57 @@ def read_MODIS(M06_files,M03_files,verbose=False): # READ THE HDF FILE
 
 	return lat,lon,CM
 
-def run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop):
+def run_modis_aggre(NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,dayloop):
 	# This function is the data aggregation loops by number of files
-	fileloop = np.array(fileloop)
-	for j in fileloop:
-		print("File Number: {} / {}".format(j,fileloop[-1]))
-	
-		# Read Level-2 MODIS data
-		lat,lon,CM = read_MODIS(M06_files[j],M03_files[j])
-		#print(lat.shape,lon.shape,CM.shape)
+	dayloop = np.array(dayloop)+1
 
-		# Ravel the 2-D data to 1-D array
-		lat = (lat.ravel()+ 89.5).astype(int)
-		lon = (lon.ravel()+ 179.5).astype(int)
-		lat = np.where(lat > -1, lat, 0)
-		lon = np.where(lon > -1, lon, 0)
+	for day in dayloop:
+
+		if day > 31: break 
 		
-		# increment total_pix by 1 for the grid for each value in (lat, lon).
-		for i, j in zip(lat, lon):
-				total_pix[i,j] += 1
+		dc ='%03i' % day
+		M06_files = read_filelist(MYD06_dir,MYD06_prefix,dc,fileformat)
+		M03_files = read_filelist(MYD03_dir,MYD03_prefix,dc,fileformat)
 		
-		# covert ds06_decoded from 2D to 1D, check whether each element is less than or equal to 0, return a tuple whose first element is an 1D arrays of indices of ds06_decoded's elements whose value is less than or equal to 0.  
-		index = np.nonzero(CM.ravel() == 0)
-		# get its lat and lon for each cloud pixel.
-		# we can use this approach because the internal structure (677, 452) is the same for both MYD03 and MYD06.
-		cloud_lon = [lon[i] for i in index[0]]
-		cloud_lat = [lat[i] for i in index[0]]
-		 # increment cloud_pix by 1 for the grid for each value in (cloud_lat, cloud_lon).
-		for x, y in zip(cloud_lat, cloud_lon):
-			cloud_pix[x,y] += 1
+		for j in range(len(M06_files)):
+			print("File Number: {} / {} in day {}".format(j,len(M06_files),day))
+			
+			# Read Level-2 MODIS data
+			lat,lon,CM = read_MODIS(M06_files[j],M03_files[j])
+			#print(lat.shape,lon.shape,CM.shape)
+	
+			# Ravel the 2-D data to 1-D array
+			lat = (lat.ravel()+ 89.5).astype(int)
+			lon = (lon.ravel()+ 179.5).astype(int)
+			lat = np.where(lat > -1, lat, 0)
+			lon = np.where(lon > -1, lon, 0)
+			
+			# increment total_pix by 1 for the grid for each value in (lat, lon).
+			for i, j in zip(lat, lon):
+					total_pix[i,j] += 1
+			
+			# covert ds06_decoded from 2D to 1D, check whether each element is less than or equal to 0, return a tuple whose first element is an 1D arrays of indices of ds06_decoded's elements whose value is less than or equal to 0.  
+			index = np.nonzero(CM.ravel() == 0)
+			# get its lat and lon for each cloud pixel.
+			# we can use this approach because the internal structure (677, 452) is the same for both MYD03 and MYD06.
+			cloud_lon = [lon[i] for i in index[0]]
+			cloud_lat = [lat[i] for i in index[0]]
+			 # increment cloud_pix by 1 for the grid for each value in (cloud_lat, cloud_lon).
+			for x, y in zip(cloud_lat, cloud_lon):
+				cloud_pix[x,y] += 1
 
 	return (total_pix,cloud_pix)
 
 def save_output(cf):
 	cf1 = xr.DataArray(cf)
-	cf1.to_netcdf("monthlyCloudFraction-file-level-parallelization.nc")
+	cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
 	plt.figure(figsize=(14, 7))
 	plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
 	plt.xlabel("Longitude", fontsize=14)
 	plt.ylabel("Latitude", fontsize=14)
 	plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
 	plt.colorbar()
-	plt.savefig("monthlyCloudFraction-file-level-parallelization.png")
+	plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
 
 
 if __name__ =='__main__':
@@ -110,10 +119,11 @@ if __name__ =='__main__':
 	start_time = timeit.default_timer()
 			
 	#-------------STEP 1: Read All Files --------
-	M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
-	M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-	M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
-	M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
+	MYD06_dir= '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
+	MYD06_prefix = 'MYD06_L2.A2008'
+	MYD03_dir= '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
+	MYD03_prefix = 'MYD03.A2008'
+	fileformat = 'hdf'
 	
 	#-------------STEP 2: Set up spactial and temporal resolution----------
 	NTA_lats = [-90,90]   #[  0,40] #[-90,90]   #[-30,30]    
@@ -141,32 +151,39 @@ if __name__ =='__main__':
 	random.seed(rank)
 
 	# Distribute the number of files into ppns for MPI
-	remain   = size-len(M06_files)%size
-	ppn_file = (len(M06_files)+remain)/size 
+	day_num   = np.linspace(1,31,31,dtype=np.int)
 
-	if ppn_file >= remain: 
-		# Distribute the day's loops into MPI ppns
-		files = np.arange(len(M06_files)+remain)
+	remain   = size-len(day_num)%size
+	ppn_file = (len(day_num)+remain)/size 
+
+	if len(day_num) <= size: 
+		files = np.arange(len(day_num)+remain)
 		tasks = np.array(np.split(files,size))
-		fileloop = tasks[rank]
+		dayloop = tasks[rank]
+
+	elif ppn_file >= remain: 
+		# Distribute the day's loops into MPI ppns
+		files = np.arange(len(day_num)+remain)
+		tasks = np.array(np.split(files,size))
+		dayloop = tasks[rank]
 	
 		if rank == (size-1): 
-			fileloop = np.delete(fileloop, np.arange(len(fileloop)-remain,len(fileloop)))
+			dayloop = np.delete(dayloop, np.arange(len(dayloop)-remain,len(dayloop)))
 	else:
 		# Distribute the day's loops into MPI ppns
-		files = np.arange(len(M06_files)-len(M06_files)%size)
+		files = np.arange(len(day_num)-len(day_num)%size)
 		tasks = np.array(np.split(files,size))
-		fileloop = tasks[rank]
+		dayloop = tasks[rank]
 	
 		if rank == (size-1): 
-			fileloop = np.append(fileloop, np.arange(len(files),len(files)+len(M06_files)%size))
+			dayloop = np.append(dayloop, np.arange(len(files),len(files)+len(day_num)%size))
 
-	print("process {} aggregating files from {} to {}...".format(rank, fileloop[0],fileloop[-1]))
+	print("process {} aggregating days from {} to {}...".format(rank, dayloop[0],dayloop[-1]))
 	
 	# Start counting operation time
 	# start_time = timeit.default_timer() 
 
-	results = np.asarray(run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop))
+	results = np.asarray(run_modis_aggre(NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,dayloop))
 		
 	if rank == 0:
 		total_pix += results[0,:]
