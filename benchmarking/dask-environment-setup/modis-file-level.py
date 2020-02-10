@@ -20,6 +20,8 @@ def aggregateOneFileData(M06_file, M03_file):
 		(cloud_pix, total_pix) (tuple): cloud_pix is an 2D(180*360) numpy array for cloud pixel count of each grid, total_pix is an 2D(180*360) numpy array for total pixel count of each grid.
     """
     
+    print("processing files in aggregateOneFileData() : " + str(M06_file) + " and " + str(M03_file))
+
     var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
             'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
@@ -59,7 +61,20 @@ def aggregateOneFileData(M06_file, M03_file):
         
     return cloud_pix, total_pix
 
+def save_output(cf):
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    plt.figure(figsize=(14, 7))
+    plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
+    plt.xlabel("Longitude", fontsize=14)
+    plt.ylabel("Latitude", fontsize=14)
+    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize=16)
+    plt.colorbar()
+    plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
+
 if __name__ == '__main__':
+
+    t0 = time.time()
 
     # cluster = SLURMCluster(cores=1, memory='50 GB', job_extra=['--exclusive'])
     # cluster = SLURMCluster(cores=1, memory='48 GB', job_extra=['--partition=batch', '--qos=normal+', '--time=3:00:00', '--exclusive', '--constraint=hpcf2013'])
@@ -70,11 +85,7 @@ if __name__ == '__main__':
     master_node = sys.argv[1] + ":8786"
     print("master_node:" + master_node)
     client = Client(master_node);
-    print("sleep for one minute for worker to get ready")
-    time.sleep(20)
     print("start read the data file")
-
-    t0 = time.time()
 
     M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
@@ -103,24 +114,13 @@ if __name__ == '__main__':
     total_pix_global[np.where(total_pix_global == 0)]=1.0
     cf = np.zeros((180, 360))
     cf = cloud_pix_global/total_pix_global
-
+    print("total_cloud_fraction:" + str(cf))
     client.close()
 
-    #write output into an nc file
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-file-level-parallelization.nc")
 
     #calculate execution time
     t1 = time.time()
     total = t1-t0
     print("total execution time (Seconds):" + str(total))
-
-    #write output into a figure
-    plt.figure(figsize=(14,7))
-    plt.contourf(range(-180,180), range(-90,90), cf, 100, cmap = "jet")
-    plt.xlabel("Longitude", fontsize = 14)
-    plt.ylabel("Latitude", fontsize = 14)
-    plt.title("Level 3 Cloud Fraction Aggregation for January 2008", fontsize = 16)
-    plt.colorbar()
-    plt.savefig("monthlyCloudFraction-file-level-parallelization.png")
-
+    
+    save_output(cf)
