@@ -1,19 +1,19 @@
 #!/bin/bash
 #SBATCH --job-name=daskJob_maxm_n8_p16_day
 #SBATCH --partition=high_mem
-#SBATCH --nodes=8
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
 #SBATCH --exclusive
 #SBATCH --mem=MaxMemPerNode
 #SBATCH --qos=normal+
-#SBATCH --output=z_slurm-%x-%j-%u.out
-#SBATCH --error=z_slurm-%x-%j-%u.out
+#SBATCH --output=dask_slurm-%x-%j-%u.out
+#SBATCH --error=dask_slurm-%x-%j-%u.out
 #SBATCH --wait-all-nodes=1
 
 
 export CONDA_PREFIX=/umbc/xfs1/cybertrn/common/Softwares/anaconda3/
 
-$DASK_SLURM_PATH/=/umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/
+DASK_SLURM_PATH=/umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/
 DASK_PYTHON_FILE=/umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/dask-environment-setup/modis-file-level.py
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
