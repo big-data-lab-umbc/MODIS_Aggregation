@@ -13,7 +13,7 @@
 
 export CONDA_PREFIX=/umbc/xfs1/cybertrn/common/Softwares/anaconda3/
 
-DASK_SLURM_PATH=/umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/
+DASK_SLURM_PATH=/umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/dask-environment-setup/
 DASK_PYTHON_FILE=/umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/dask-environment-setup/modis-file-level.py
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
