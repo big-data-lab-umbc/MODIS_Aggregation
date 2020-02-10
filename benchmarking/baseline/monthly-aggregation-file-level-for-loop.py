@@ -55,8 +55,8 @@ def aggregateOneFileData(M06_file, M03_file):
     
 if __name__ == '__main__':
 
-    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
-    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
