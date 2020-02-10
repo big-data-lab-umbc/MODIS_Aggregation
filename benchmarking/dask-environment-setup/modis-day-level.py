@@ -12,6 +12,8 @@ from dask.distributed import as_completed
 
 def aggregateOneDayData(z):
 
+    print("enter aggregateOneDayData() with z as : " + str(z))
+
     var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
             'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
