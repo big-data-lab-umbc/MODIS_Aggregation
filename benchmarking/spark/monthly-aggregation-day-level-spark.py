@@ -83,6 +83,8 @@ def save_output(cf):
 
 if __name__ == '__main__':
 
+    t0 = time.time()
+
     #M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
     #M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
     #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
@@ -91,7 +93,7 @@ if __name__ == '__main__':
     M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
-    file_pairs = zip(M06_files, M03_files)
+    #file_pairs = zip(M06_files, M03_files)
     #print(file_pairs)
 
     index = 31
@@ -99,8 +101,6 @@ if __name__ == '__main__':
     z = y[1:]
     print(z)
 
-    t0 = time.time()
-    
     # Initiate and process the parallel by Spark
     spark = SparkSession\
             .builder\
@@ -115,10 +115,12 @@ if __name__ == '__main__':
     total_cloud_fraction = (global_cloud_pix/global_total_pix)
     print("total_cloud_fraction:" + str(total_cloud_fraction))
     print("total_cloud_fraction.shape:" + str(total_cloud_fraction.shape))
-    #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
-    save_output(total_cloud_fraction)
 
     #calculate execution time
     t1 = time.time()
     total = t1-t0
     print("total execution time (Seconds):" + str(total))
+   
+    #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
+    save_output(total_cloud_fraction)
+
