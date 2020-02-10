@@ -102,7 +102,7 @@ fi
 which python
 sleep 20
 echo "Starting running python file"
-$CONDA_PREFIX/bin/python $DASK_PYTHON_FILE/modis-file-level.py $master_ip 
+$CONDA_PREFIX/bin/python $DASK_PYTHON_FILE $master_ip 
 echo "call kill worker script"
 
 if [[ $nodes == *","* ]]; then
