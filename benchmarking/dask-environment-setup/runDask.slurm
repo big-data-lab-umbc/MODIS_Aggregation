@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=daskJob_maxm_n8_p16_day
+#SBATCH --job-name=daskJob
 #SBATCH --partition=high_mem
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
