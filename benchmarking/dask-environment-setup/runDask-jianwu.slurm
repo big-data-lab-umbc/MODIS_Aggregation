@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=daskJob_maxm_n8_p16_day
+#SBATCH --job-name=daskJob_maxm_n8_p8_day
 #SBATCH --partition=high_mem
-#SBATCH --nodes=8
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
 #SBATCH --exclusive
 #SBATCH --mem=MaxMemPerNode
@@ -23,12 +23,6 @@ sleep 3
 echo "start new scheduler"
 dask-scheduler &
 sleep 30
-
-echo "delete old worker on master before run py file"
-ps aux | grep -ie dask-worker | awk '{print $2}' | xargs kill -9
-echo "start new worker on master"
-ssh ${master} /umbc/xfs1/jianwu/common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/start_worker.bash ${master_ip} &
-sleep 5
 
 #srun python modis.py $master_ip 
 
@@ -96,7 +90,7 @@ fi
 which python
 sleep 20
 echo "Starting running python file"
-/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python /home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/modis-file-level.py $master_ip 
+/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python /home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/xarray-dask/monthly-aggregation-file-level-dask.py $master_ip 
 echo "call kill worker script"
 
 if [[ $nodes == *","* ]]; then
@@ -152,12 +146,6 @@ else
     fi
   done
 fi
-
-echo "delete old schedulers after py run"
-ps aux | grep -ie dask-scheduler | awk '{print $2}' | xargs kill -9
-
-echo "delete old worker on master after run py file"
-ps aux | grep -ie dask-worker | awk '{print $2}' | xargs kill -9
 
 echo "call kill_worker finishes"
 echo "End running python file"

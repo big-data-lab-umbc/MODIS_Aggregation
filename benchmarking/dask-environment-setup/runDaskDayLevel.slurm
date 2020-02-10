@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=daskJob_maxm_n8_p16_day
+#SBATCH --job-name=daylevel_maxm_n4_p16
 #SBATCH --partition=high_mem
-#SBATCH --nodes=8
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
 #SBATCH --exclusive
 #SBATCH --mem=MaxMemPerNode
@@ -96,7 +96,7 @@ fi
 which python
 sleep 20
 echo "Starting running python file"
-/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python /home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/modis-file-level.py $master_ip 
+/umbc/xfs1/cybertrn/common/Softwares/anaconda3/bin/python /home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github-dask/MODIS_Aggregation/benchmarking/dask-environment-setup/modis-day-level.py $master_ip 
 echo "call kill worker script"
 
 if [[ $nodes == *","* ]]; then
