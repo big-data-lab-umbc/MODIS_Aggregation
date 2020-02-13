@@ -21,14 +21,6 @@ from mpi4py import MPI
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 
-def read_filelist(loc_dir,prefix,yr,day,fileformat):
-	# Read the filelist in the specific directory
-	str = os.popen("ls "+ loc_dir + prefix + yr + day + "*."+fileformat).read()
-	fname = np.array(str.split("\n"))
-	fname = np.delete(fname,len(fname)-1)
-
-	return fname
-
 def read_MODIS(M06_files,M03_files,verbose=False): # READ THE HDF FILE
 	
 	# Read the cloud mask from MYD06_L2 product')
@@ -59,7 +51,7 @@ def read_MODIS(M06_files,M03_files,verbose=False): # READ THE HDF FILE
 
 	return lat,lon,CM
 
-def run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop):
+def run_modis_aggre(M06_files,M03_files,fileloop):
 	# This function is the data aggregation loops by number of files
 	fileloop = np.array(fileloop)
 	for j in fileloop:
@@ -116,23 +108,8 @@ if __name__ =='__main__':
 	M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
 	
 	#-------------STEP 2: Set up spactial and temporal resolution----------
-	NTA_lats = [-90,90]   #[  0,40] #[-90,90]   #[-30,30]    
-	NTA_lons = [-180,180] #[-40,60] #[-180,180] #[-60,60]  
-	
-	gap_x, gap_y = 1,1 #0.625,0.5
-
-	if ((NTA_lons[-1]-NTA_lons[0])%gap_x != 0) | ((NTA_lats[-1]-NTA_lats[0])%gap_y != 0): 
-		print("Grid size should be dividable by the dimension of the selected region.")
-		print("If you choose the region of latitude  from -40 to 40, then you gird size (gap_y) should be dividable by 80.")
-		print("If you choose the region of longitude from  20 to 35, then you gird size (gap_x) should be dividable by 55.")
-		print("Please try again!")
-		sys.exit()
-
-	grid_lon=np.int((NTA_lons[-1]-NTA_lons[0])/gap_x)
-	grid_lat=np.int((NTA_lats[-1]-NTA_lats[0])/gap_y)
-
-	total_pix = np.zeros((grid_lat, grid_lon))
-	cloud_pix = np.zeros((grid_lat, grid_lon))
+	total_pix = np.zeros((180, 360))
+	cloud_pix = np.zeros((180, 360))
 
 	# Initiate MPI 
 	comm = MPI.COMM_WORLD
@@ -166,7 +143,7 @@ if __name__ =='__main__':
 	# Start counting operation time
 	# start_time = timeit.default_timer() 
 
-	results = np.asarray(run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop))
+	results = np.asarray(run_modis_aggre(M06_files,M03_files,fileloop))
 		
 	if rank == 0:
 		total_pix += results[0,:]
@@ -181,18 +158,16 @@ if __name__ =='__main__':
 
 		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 		Mean_Fraction = (total_pix / cloud_pix)
-
-		end_time = timeit.default_timer()
 		
-		# Create HDF5 file to store the result 
-		save_output(Mean_Fraction)
-
-		# end_time = timeit.default_timer()
-
 		print('Mean_Fraction:')
 		print( Mean_Fraction  )
 
+		# end_time = timeit.default_timer()
+		end_time = timeit.default_timer()
 		print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
+		
+		# Create HDF5 file to store the result 
+		save_output(Mean_Fraction)
 		
 
 	else:
