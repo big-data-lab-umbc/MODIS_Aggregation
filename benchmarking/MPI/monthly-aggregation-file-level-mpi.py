@@ -143,7 +143,7 @@ if __name__ =='__main__':
 	# Start counting operation time
 	# start_time = timeit.default_timer() 
 
-	results = np.asarray(run_modis_aggre(M06_files,M03_files,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,fileloop))
+	results = np.asarray(run_modis_aggre(M06_files,M03_files,fileloop))
 		
 	if rank == 0:
 		total_pix += results[0,:]

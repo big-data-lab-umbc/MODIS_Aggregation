@@ -61,7 +61,7 @@ def run_modis_aggre(dayloop):
 		
 		dc ='%03i' % day
 		M03_files = sorted(glob.glob(MYD03_dir + "MYD03.A2008" + dc + "*"))
-    	M06_files = sorted(glob.glob(MYD06_dir + "MYD06_L2.A2008" + dc + "*"))
+		M06_files = sorted(glob.glob(MYD06_dir + "MYD06_L2.A2008" + dc + "*"))
 
 		for j in range(len(M06_files)):
 			print("File Number: {} / {} in day {}".format(j,len(M06_files),day))
