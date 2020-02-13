@@ -1,31 +1,27 @@
-from netCDF4 import Dataset
 import numpy as np
+import xarray as xr
 import glob
 import matplotlib.pyplot as plt
 import time
-import h5py
-import xarray as xr
-from pyspark.sql import SparkSession
 
 def aggregateOneDayData(z):
 
+    print("z in aggregateOneDayData:" + str(z))
     var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
             'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
             'SV start time', 'EV center time', 'Mirror side', 'SD Sun zenith', 'SD Sun azimuth',
             'Moon Vector','orb_pos', 'orb_vel', 'T_inst2ECR', 'attitude_angles', 'sun_ref',
             'impulse_enc', 'impulse_time', 'thermal_correction', 'SensorAzimuth']
-            
-            
-    total_pix = np.zeros((180, 360))
-    cloud_pix = np.zeros((180, 360))
 
-    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008" + z + "*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008" + z + "*"))
 
-    print(M03_files)
+        
+    total_pix = np.zeros((180, 360))
+    cloud_pix = np.zeros((180, 360))
 
     for x,y in zip(M06_files,M03_files):
 
@@ -53,22 +49,7 @@ def aggregateOneDayData(z):
 
     return cloud_pix, total_pix
 
-def save_hdf(out_name,total_cloud_fraction,lat_bnd,lon_bnd):
-    f=h5py.File(out_name,'w')
-    PCentry=f.create_dataset('CF',data=total_cloud_fraction)
-    PCentry.dims[0].label='lat_bnd'
-    #PCentry.dims[1].label='lon_bnd'
-    
-    PC=f.create_dataset('lat_bnd',data=lat_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Latitude_boundaries'
-    
-    PC=f.create_dataset('lon_bnd',data=lon_bnd)
-    PC.attrs['units']='degrees'
-    PC.attrs['long_name']='Longitude_boundaries'
-    f.close()
-    print(out_name+' Saved!!')
-    
+
 def save_output(cf):
     cf1 = xr.DataArray(cf)
     cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
@@ -80,47 +61,39 @@ def save_output(cf):
     plt.colorbar()
     plt.savefig("monthlyCloudFraction-day-level-parallelization.png")
 
-
 if __name__ == '__main__':
 
+    #get time in seconds.
     t0 = time.time()
 
-    #M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
-    #M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
-    #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
-    #M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
-    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
-    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
-    #file_pairs = zip(M06_files, M03_files)
-    #print(file_pairs)
+    M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
 
     index = 31
     y = [str(x).zfill(3) for x in range(index + 1)]
     z = y[1:]
-    print(z)
 
-    # Initiate and process the parallel by Spark
-    spark = SparkSession\
-            .builder\
-            .appName("MODIS_agg")\
-            .getOrCreate()
-    sc = spark.sparkContext
-    global_cloud_pix, global_total_pix = sc.parallelize(z, 31).map(lambda x: aggregateOneDayData(x)).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
-    spark.stop() # Stop Spark
-    lat_bnd = np.arange(-90,90,1)
-    lon_bnd = np.arange(-180,180,1)
-    global_total_pix[np.where(global_total_pix == 0)]=1.0
-    total_cloud_fraction = (global_cloud_pix/global_total_pix)
-    print("total_cloud_fraction:" + str(total_cloud_fraction))
-    print("total_cloud_fraction.shape:" + str(total_cloud_fraction.shape))
+    cloud_pix_global = np.zeros((180, 360))
+    total_pix_global = np.zeros((180, 360))
+
+    for day in z:
+        one_day_result = aggregateOneDayData(day)
+        print("one_day_result: " + str(one_day_result))
+        cloud_pix_global+=one_day_result[0]
+        total_pix_global+=one_day_result[1]        
+
+    #calculate final cloud fraction using global 2D result
+    total_pix_global[np.where(total_pix_global == 0)]=1.0
+    cf = np.zeros((180, 360))
+    cf = cloud_pix_global/total_pix_global
+    print("cloud fraction: " + str(cf))    
 
     #calculate execution time
     t1 = time.time()
     total = t1-t0
     print("total execution time (Seconds):" + str(total))
-   
-    #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
-    save_output(total_cloud_fraction)
-
+    
+    #write output into an nc file
+    save_output(cf)

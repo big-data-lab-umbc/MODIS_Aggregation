@@ -12,6 +12,8 @@ from dask.distributed import as_completed
 
 def aggregateOneDayData(z):
 
+    print("enter aggregateOneDayData() with z as : " + str(z))
+
     var_list = ['Scan Offset','Track Offset','Height Offset', 'Height', 'SensorZenith', 
             'Range', 'SolarZenith', 'SolarAzimuth', 'Land/SeaMask','WaterPresent','gflags',
             'Scan number', 'EV frames', 'Scan Type', 'EV start time', 'SD start time',
@@ -55,8 +57,8 @@ def aggregateOneDayData(z):
 
 
 def save_output(cf):
-    #cf1 = xr.DataArray(cf)
-    #cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
     plt.figure(figsize=(14, 7))
     plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
     plt.xlabel("Longitude", fontsize=14)
@@ -72,16 +74,14 @@ if __name__ == '__main__':
 
     #cluster.scale(16)
 
+    #get time in seconds.
+    t0 = time.time()
+
     #client = Client(cluster)
     master_node = sys.argv[1] + ":8786"
     print("master_node:" + master_node)
     client = Client(master_node);
-    print("sleep for 20 seconds for worker to get ready")
-    time.sleep(20)
     print("start read the data file")
-
-    #get time in seconds.
-    t0 = time.time()
 
     M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
     M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
@@ -94,37 +94,25 @@ if __name__ == '__main__':
     print("z is: ")
     print(z)
 
+    tt = client.map(aggregateOneDayData, z)
+    cloud_pix_global = np.zeros((180, 360))
+    total_pix_global = np.zeros((180, 360))
 
-    tt = client.submit(aggregateOneDayData,z)
+    #add each aggregateOneDayData function call result (namely one file result) to final global 2D result
+    for future, result in as_completed(tt, with_results= True):
+        #print(result.shape)
+        cloud_pix_global+=result[0]
+        total_pix_global+=result[1]
 
-    result1 = client.gather(tt, asynchronous=True)
+    #calculate final cloud fraction using global 2D result
+    total_pix_global[np.where(total_pix_global == 0)]=1.0
+    cf = np.zeros((180, 360))
+    cf = cloud_pix_global/total_pix_global
+    print("total_cloud_fraction:" + str(cf))
 
-
-    #future1 = client.submit(ingest_data,M03_dir,M06_dirresult1 = client.gather(tt)
-
-
-    #tt.result()[1][np.where(tt.result()[1] == 0)] = 1.0
-
-    cf = tt.result()[0]/tt.result()[1]
-
-
-    #cloud_pix_global = np.zeros((180, 360))
-    #total_pix_global = np.zeros((180, 360))
-    # finallist = np.zeros((180, 360))
-
-
-    #for future, result in as_completed(tt, with_results=True):
-        # print(result.shape)
-    #    cloud_pix_global += result[0]
-    #    total_pix_global += result[1]
-
-    #total_pix_global[np.where(total_pix_global == 0)] = 1.0
-    #cf = np.zeros((180, 360))
-    #cf = cloud_pix_global / total_pix_global
 
     client.close()
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-day-level-parallelization.nc")
+    print("total_cloud_fraction:" + str(cf))
     
     #calculate execution time
     t1 = time.time()

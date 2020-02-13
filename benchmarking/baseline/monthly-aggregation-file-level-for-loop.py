@@ -55,12 +55,12 @@ def aggregateOneFileData(M06_file, M03_file):
     
 if __name__ == '__main__':
 
-    M03_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD03/"
-    M06_dir = "/Users/jianwu/Documents/github/MODIS-Aggregation/input-data/MYD06/"
+    t0 = time.time()
+
+    M03_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/"
+    M06_dir = "/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/"
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))
-
-    t0 = time.time()
 
     cloud_pix_global = np.zeros((180, 360))
     total_pix_global = np.zeros((180, 360))
@@ -75,15 +75,16 @@ if __name__ == '__main__':
     total_pix_global[np.where(total_pix_global == 0)]=1.0
     cf = np.zeros((180, 360))
     cf = cloud_pix_global/total_pix_global
-
-    #write output into an nc file
-    cf1 = xr.DataArray(cf)
-    cf1.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
+    print("total_cloud_fraction:" + str(cf))
 
     #calculate execution time
     t1 = time.time()
     total = t1-t0
     print("total execution time (Seconds):" + str(total))
+
+    #write output into an nc file
+    cf1 = xr.DataArray(cf)
+    cf1.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
 
     #write output into a figure
     plt.figure(figsize=(14,7))
