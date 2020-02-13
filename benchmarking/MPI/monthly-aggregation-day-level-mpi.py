@@ -172,18 +172,16 @@ if __name__ =='__main__':
 
 		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 		Mean_Fraction = (total_pix / cloud_pix)
-
-		end_time = timeit.default_timer()
 		
-		# Create HDF5 file to store the result 
-		save_output(Mean_Fraction)
-
-		# end_time = timeit.default_timer()
-
 		print('Mean_Fraction:')
 		print( Mean_Fraction  )
 
+		# end_time = timeit.default_timer()
+		end_time = timeit.default_timer()
 		print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
+		
+		# Create HDF5 file to store the result 
+		save_output(Mean_Fraction)
 		
 
 	else:
