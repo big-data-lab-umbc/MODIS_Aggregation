@@ -23,7 +23,14 @@
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
 
+# Example 2: Calculate Minimum, Maximum, Mean, Pixel Counts, Standard Deviation, Histogram and Joint Histogram. 
+#			 Variables in input_file.csv & input_Jhist.csv:  
+#              cloud_top_pressure_1km   
+#              cloud_top_temperature_1km
+#              cloud_emissivity_1km     
+#              Cloud_Fraction           
+#              cloud_top_height_1km     
 
 #python aggre_stats_series_v2.py 1 1 1 1 1 0 1 filename.dat 21 150 320 histname.dat 4 0 1100
-python3 aggre_stats_series_v5.py 1 1 1 1 1 1 1 input_file.csv input_Jhist.csv
+python3 baseline_series_v6.py [-90,90,-180,180] [1,1] [3] 1 1 1 1 1 1 1 input_file.csv input_Jhist.csv
 

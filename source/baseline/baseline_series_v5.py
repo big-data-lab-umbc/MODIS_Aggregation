@@ -15,6 +15,7 @@ Created on 2019
 # V5 Updates: Refine 1d histogram and 2d histogram to be user-defined intervals 
 #			  Combine the interval with the variable names in onw file. 
 #             Separate 1d and 2d histogram interval in 2 files with all variables.
+# V6 Updates: Add the flexible input of polygon region
 
 import os 
 import sys
