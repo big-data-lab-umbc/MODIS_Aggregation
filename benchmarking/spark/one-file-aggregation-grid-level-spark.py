@@ -30,6 +30,7 @@ def aggregateOneFileData(M06_file, M03_file):
     d06CM = d06[::3,::3]
     ds06_decoded = (np.array(d06CM, dtype = "byte") & 0b00000110) >> 1
     ds06_1d = ds06_decoded.ravel()
+    #[print("one element:" + str(a)) for a in ds06_1d]
     # shape of d03_lat and d03_lon: (2030, 1354)
     d03_lat = Dataset(M03_file, "r").variables['Latitude'][:,:]
     d03_lon = Dataset(M03_file, "r").variables['Longitude'][:,:]
@@ -40,10 +41,11 @@ def aggregateOneFileData(M06_file, M03_file):
     lat = np.where(lat > -1, lat, 0)
     lon = np.where(lon > -1, lon, 0)
     
-    for i in ds06_1d:
-        output_list.append(((lon[i], lat[i]), (ds06_1d[i], 1)))
+    for i in range(0, ds06_1d.size):
+        #print("one element:" + str(lat[i]) + "," + str(lon[i]) + ", " + str(ds06_1d[i]))
+        output_list.append(((lat[i], lon[i]), (1 if ds06_1d[i] == 0 else 0, 1)))
     
-    print(output_list)    
+    print("output for " + str(M06_file) + ":" + str(output_list))    
     return output_list
 
 
@@ -84,11 +86,14 @@ if __name__ =='__main__':
     result = sc.parallelize(list(file_pairs), file_num).flatMap(lambda x: aggregateOneFileData(x[0],x[1])).reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])).collect()
     spark.stop() # Stop Spark
     
-    global_total_pix = np.zeros((180, 360))
+    print(result)
+    
+    global_cloud_pix = np.zeros((180, 360))
     global_total_pix = np.zeros((180, 360))
     for element in result:
-        cloud_pix(element[0][0], element[0][1]) = element[1][0]
-        total_pix(element[0][0], element[0][1]) = element[1][1]
+        print("element:" + str(element))
+        global_cloud_pix[element[0][0], element[0][1]] = element[1][0]
+        global_total_pix[element[0][0], element[0][1]] = element[1][1]
     
     total_cloud_fraction = (global_cloud_pix/global_total_pix)
     print("total_cloud_fraction:" + str(total_cloud_fraction))
