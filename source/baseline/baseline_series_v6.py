@@ -15,7 +15,7 @@ Created on 2019
 # V5 Updates: Refine 1d histogram and 2d histogram to be user-defined intervals 
 #			  Combine the interval with the variable names in onw file. 
 #             Separate 1d and 2d histogram interval in 2 files with all variables.
-
+# V6 Updates: Add the flexible input of sampling rate, polygon region and grid sizes of Lat & Lon
 
 import os 
 import sys
@@ -38,16 +38,21 @@ def read_filelist(loc_dir,prefix,yr,day,fileformat):
 
 def readEntry(key,ncf):
 	# Read the MODIS variables based on User's name list
-    rdval=np.array(ncf.variables[key])
+	rdval=np.array(ncf.variables[key]).astype(np.float)
+	#scale=ncf.variables[key].scale_factor
+	#offst=ncf.variables[key].add_offset
+	#(rdval+offst)*scale
 
-    scale=ncf.variables[key].scale_factor
-    offst=ncf.variables[key].add_offset
-    lonam= ncf.variables[key].long_name
-    fillvalue = ncf.variables[key]._FillValue
+	# Read the attributes of the variable
+	lonam= ncf.variables[key].long_name
+	fillvalue = ncf.variables[key]._FillValue
 
-    rdval[np.where(rdval == fillvalue)] = 0.0
+	rdval[np.where(rdval == fillvalue)] = np.nan
 
-    return (rdval+offst)*scale,lonam
+	#Sampling the variable
+	rdval = rdval[::spl_num,::spl_num]
+
+	return rdval,lonam
 
 def read_MODIS(varnames,fname1,fname2): 
 	# Store the data from variables after reading MODIS files
@@ -55,9 +60,14 @@ def read_MODIS(varnames,fname1,fname2):
 	longname_list = []
 	# Read the Cloud Mask from MYD06 product
 	ncfile=Dataset(fname1,'r')
-	CM1km = readEntry('Cloud_Mask_1km',ncfile)
-	CM1km = np.array(ncfile.variables['Cloud_Mask_1km'])
-	data['CM'] = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
+
+	#CM1km = readEntry('Cloud_Mask_1km',ncfile)
+	#CM1km = np.array(ncfile.variables['Cloud_Mask_1km'])
+	#data['CM'] = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
+	
+	d06_CM = ncfile.variables['Cloud_Mask_1km'][:,:,0]
+	CM1km  = d06_CM[::spl_num,::spl_num]
+	data['CM'] = (np.array(CM1km,dtype='byte') & 0b00000110) >>1
 	data['CM'] = data['CM'].astype(np.float)
 
 	# Read the User-defined variables from MYD06 product
@@ -74,8 +84,10 @@ def read_MODIS(varnames,fname1,fname2):
 
 	# Read the common variables (Latitude & Longitude) from MYD03 product
 	ncfile=Dataset(fname2,'r')
-	lat  = np.array(ncfile.variables['Latitude'])
-	lon  = np.array(ncfile.variables['Longitude'])
+	d03_lat  = np.array(ncfile.variables['Latitude'][:,:])
+	d03_lon  = np.array(ncfile.variables['Longitude'][:,:])
+	lat  = d03_lat[::spl_num,::spl_num]
+	lon  = d03_lon[::spl_num,::spl_num]
 	attr_lat = ncfile.variables['Latitude']._FillValue
 	attr_lon = ncfile.variables['Longitude']._FillValue
 
@@ -100,7 +112,8 @@ def read_MODIS(varnames,fname1,fname2):
 
 	return lat,lon,data,longname_list
 
-def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,sts_switch,sts_name,bin_interval1,bin_interval2):
+def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,ave_val_2d, \
+			  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx):
 # Calculate Statistics pamameters
 					
 	#Min and Max
@@ -123,37 +136,33 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,sts_switch,s
 
 	#1D Histogram 
 	if sts_switch[5] == True:	
-		hist_idx1 = np.where(bin_interval1 <= ave_val)#[0][-1]
-		print(hist_idx1,bin_interval1,ave_val) 
-		if hist_idx1 <= (grid_data[key+'_'+sts_name[5]].shape[0]-1): 
-			hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[0]-1)
-		if hist_idx1 >= 0:  
-			hist_idx1 = 0
+		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+		hist_idx1 = np.where(bin_interval1 <= ave_val)[0]
+		hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+		if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
 		grid_data[key+'_'+sts_name[5]][z, hist_idx1] += 1
-	
+		
 	#2D Histogram 
 	if sts_switch[6] == True:
-
-		hist_idx1 = np.where(bin_interval1 <= ave_val)[0][-1]
-		if hist_idx1 <= (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1): 
-			hist_idx1 = (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1)
-		if hist_idx1 >= 0: 
-			hist_idx1 = 0
-
-		hist_idx2 = np.where(bin_interval2 <= ave_val)[0][-1]
-		if hist_idx2 <= (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1): 
-			hist_idx2 = (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1)
-		if hist_idx2 >= 0: 
-			hist_idx2 = 0
-		grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]][z, hist_idx1,hist_idx2] += 1
+		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+		hist_idx1 = np.where(bin_interval1 <= ave_val)[0]
+		hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+		if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
+		
+		bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+		hist_idx2 = np.where(bin_interval2 <= ave_val_2d)[0]
+		hist_idx2 = 0 if len(hist_idx2) == 0 else hist_idx2[-1]
+		if hist_idx2 > (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1): hist_idx2 = (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1) 
+		
+		grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z, hist_idx1,hist_idx2] += 1
 
 	return grid_data
 
 def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
-					grid_data,sts_switch,varnames,bin_interval1,bin_interval2):
+					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in hdfs:
+	for j in range(5):#hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 	
 		# Read Level-2 MODIS data
@@ -171,9 +180,14 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
 		lon = lon.ravel()
 		CM  = CM.ravel()
 
+		key_idx = 0
 		for key in varnames:
-			if key == 'Cloud_Fraction': continue #Ignoreing Cloud_Fraction from the input file	
+			if key == 'Cloud_Fraction': 
+				CF_key_idx = key_idx
+				key_idx += 1
+				continue #Ignoreing Cloud_Fraction from the input file	
 			data[key] = data[key][res_idx].ravel()
+			key_idx += 1
 			
 		# Locate the lat lon index into 3-Level frid box
 		idx_lon = ((lon-NTA_lons[0])/gap_x).astype(int)
@@ -193,78 +207,40 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
 				CLD_pix = np.sum(CM[np.where(latlon_index == z)]<=1).astype(float)
 				Fraction = CLD_pix / TOT_pix
 
+				if len(intervals_2d) != 1:	
+					pixel_data_2d = data[varnames[var_idx[CF_key_idx]]]
+					ave_val_2d = np.nansum(pixel_data_2d[np.where(latlon_index == z)]).astype(float) / TOT_pix
+				else:
+					ave_val_2d = 0
+
 				# Calculate Statistics pamameters
 				grid_data = cal_stats(z,"Cloud_Fraction",grid_data, \
-									  Fraction,Fraction,CLD_pix,TOT_pix,Fraction, \
-									  sts_switch,sts_name,bin_interval1,bin_interval2)
+									  Fraction,Fraction,CLD_pix,TOT_pix,Fraction,ave_val_2d, \
+									  sts_switch,sts_name,intervals_1d,intervals_2d,CF_key_idx)
 
 				# For other variables
+				key_idx = 0
 				for key in varnames:
-					if key == 'Cloud_Fraction': continue #Ignoreing Cloud_Fraction from the input file	
+					if key == 'Cloud_Fraction': #Ignoreing Cloud_Fraction from the input file	
+						key_idx += 1
+						continue 
 					pixel_data = data[key]
 					tot_val = np.nansum(pixel_data[np.where(latlon_index == z)]).astype(float)
 					ave_val = tot_val / TOT_pix
 					max_val = np.nanmax(pixel_data[np.where(latlon_index == z)]).astype(float)
 					min_val = np.nanmin(pixel_data[np.where(latlon_index == z)]).astype(float)
-				
+					
+					if len(intervals_2d) != 1:
+						pixel_data_2d = data[varnames[var_idx[key_idx]]]
+						ave_val_2d = np.nansum(pixel_data_2d[np.where(latlon_index == z)]).astype(float) / TOT_pix
+					else:
+						ave_val_2d = 0
+
 					# Calculate Statistics pamameters
 					grid_data = cal_stats(z,key,grid_data, \
-										  min_val,max_val,tot_val,TOT_pix,ave_val, \
-										  sts_switch,sts_name,bin_interval1,bin_interval2)
-
-				##Min and Max
-				#if sts_switch[0] == True:
-				#	if  grid_data["Cloud_Fraction"+'_'+sts_name[0]][z] > Fraction:
-				#		grid_data["Cloud_Fraction"+'_'+sts_name[0]][z] = Fraction
-#
-				#	if  grid_data[key+'_'+sts_name[0]][z] > MIN_val:
-				#		grid_data[key+'_'+sts_name[0]][z] = MIN_val
-	#
-				#if sts_switch[1] == True:
-				#	if  grid_data["Cloud_Fraction"+'_'+sts_name[1]][z] < Fraction:
-				#		grid_data["Cloud_Fraction"+'_'+sts_name[1]][z] = Fraction
-#
-				#	if  grid_data[key+'_'+sts_name[1]][z] > MAX_val:
-				#		grid_data[key+'_'+sts_name[1]][z] = MAX_val
-#
-				##Total and Count for Mean
-				#if (sts_switch[2] == True) | (sts_switch[4] == True):
-				#	grid_data["Cloud_Fraction"+'_'+sts_name[2]][z] += CLD_pix
-				#	grid_data["Cloud_Fraction"+'_'+sts_name[4]][z] += TOT_pix
-#
-				#	grid_data[key+'_'+sts_name[2]][z] += TOT_val
-				#	grid_data[key+'_'+sts_name[4]][z] += TOT_pix
-				#
-				##Standard Deviation 
-				#if sts_switch[3] == True:
-				#	grid_data["Cloud_Fraction"+'_'+sts_name[3]][z] += Fraction**2
-				#	grid_data[key+'_'+sts_name[3]][z] += ave_val**2
-	
-				##1D Histogram 
-				#if (sts_switch[5] == True) | (sts_switch[6] == True):
-				#	hist_bnd1 = np.linspace(lobnd1,upbnd1,bin_num[0]+1)
-				#	bin_interval1 = (upbnd1 - lobnd1)/bin_num[0]
-				#	1D_hist_cnt = np.zeros(bin_num[0])
-		#
-				#	hist_idx1 = ((Fraction-lobnd1)/bin_interval1).astype(int)
-				#	if hist_idx1 <= 1D_hist_cnt.shape[0]: 
-				#		hist_idx1 = 1D_hist_cnt.shape[0]
-				#	if hist_idx1 >= 0: 
-				#		hist_idx1 = 0
-				#	1D_hist_cnt[z, hist_idx1] += 1
-#	
-				##2D Histogram 
-				#if sts_switch[6] == True:
-				#	hist_bnd2 = np.linspace(lobnd2,upbnd2,bin_num[1]+1)
-				#	2D_hist_cnt = np.zeros((bin_num[0],bin_num[1]))
-				#	bin_interval2 = (upbnd2 - lobnd2)/bin_num[1]
-#	
-				#	hist_idx2 = ((Fraction-lobnd2)/bin_interval2).astype(int)
-				#	if hist_idx2 <= 2D_hist_cnt.shape[0]: 
-				#		hist_idx2 = 2D_hist_cnt.shape[0]
-				#	if hist_idx2 >= 0: 
-				#		hist_idx2 = 0
-				#	2D_hist_cnt = [z, hist_idx1,hist_idx2] += 1
+										  min_val,max_val,tot_val,TOT_pix,ave_val,ave_val_2d, \
+										  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx)
+					key_idx += 1
 
 	return grid_data,longname_list
 
@@ -287,21 +263,32 @@ if __name__ =='__main__':
 	
 	#-------------STEP 0: Read the input from User --------
 	# checking user input
-	if (len(sys.argv) != 8) & (len(sys.argv) != 10):
+	if (len(sys.argv) != 11) & (len(sys.argv) != 13):
 		print("Wrong user input")
-		print("usage: python aggre_stats_mpi.py <1/0> <1/0> <1/0> \
+		print("usage: python aggre_stats_mpi.py <Polygon boundaries> <Lat & Lon Grid Size > \
+												<Sampling number larger than 0> \
+												<1/0> <1/0> <1/0> \
 												<1/0> <1/0> <1/0> \
 												<1/0> <Variable Imput File> <JHist Variable Imput File>")
+		#spl_num = np.int(sys.argv[3][1:-1])
+		#poly=np.fromstring(sys.argv[1][1:-1], dtype=np.int, sep=',' )
+		#grid=np.fromstring(sys.argv[2][1:-1], dtype=np.float, sep=',' )
+		#print(spl_num,poly,grid)
 		sys.exit()
 	else:
+		# Define the sampling rate, boundaries of the selected polygon region & the grid size of Lat & Lon
+		spl_num = np.int(sys.argv[3][1:-1])
+		poly=np.fromstring(sys.argv[1][1:-1], dtype=np.int, sep=',' )
+		grid=np.fromstring(sys.argv[2][1:-1], dtype=np.float, sep=',' )
+		
 		# Define the statistics names for HDF5 output
 		sts_name = ['Minimum','Maximum','Mean','Pixel_Counts', \
 					'Standard_Deviation','Histogram_Counts','Jhisto_vs_']
 
 		# Pass system arguments to the function
-		sts_switch = np.array(sys.argv[1:8],dtype=np.int)
+		sts_switch = np.array(sys.argv[4:11],dtype=np.int)
 		sts_switch = np.array((sts_switch == 1))
-		varlist  = sys.argv[8] 
+		varlist  = sys.argv[11] 
 
 		# Read the variable names from the variable name list
 		text_file = np.array(pd.read_csv(varlist, header=0, delim_whitespace=True)) #open(varlist, "r")
@@ -309,17 +296,18 @@ if __name__ =='__main__':
 
 		if sts_switch[5] == True: 
 			intervals_1d = text_file[:,1] # This is a string interval arrays
-		#else: 
-		#bin_num1,bin_interval1 = 0,0
+		else: 
+			intervals_1d = [0]
 
 		if sts_switch[6] == True:	
 			# Read the joint histogram names from the variable name list
-			jvarlist = sys.argv[9]
+			jvarlist = sys.argv[12]
 			text_file = np.array(pd.read_csv(jvarlist, header=0, delim_whitespace=True)) #open(varlist, "r")
-			histnames = text_file[:,1] #text_file.read().split('\n')
-			intervals_2d = text_file[:,2]
-		#else:
-		#bin_num2,bin_interval2 = 0,0
+			histnames = text_file[:,1] 
+			var_idx   = text_file[:,2] #This is the index of the input variable name which is used for 2D histogram
+			intervals_2d = text_file[:,3]
+		else:
+			intervals_2d,var_idx = [0],[0]
 		
 	#-------------STEP 1: Set up the specific directory --------
 	MYD06_dir= '/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/'
@@ -329,27 +317,28 @@ if __name__ =='__main__':
 	fileformat = 'hdf'
 	
 	#-------------STEP 2: Set up spactial and temporal resolution & variable names----------
-	NTA_lats = [-90,90]   #[  0,40] #[-90,90]   #[-30,30]    
-	NTA_lons = [-180,180] #[-40,60] #[-180,180] #[-60,60]  
+	NTA_lats = [poly[0],poly[1]] #[  0,40] #[-90,90]   #[-30,30]    
+	NTA_lons = [poly[2],poly[3]] #[-40,60] #[-180,180] #[-60,60]  
 	
-	gap_x, gap_y = 1,1 #0.625,0.5
+	gap_x, gap_y = grid[1],grid[0] #0.5,0.625
 
 	if ((NTA_lons[-1]-NTA_lons[0])%gap_x != 0) | ((NTA_lats[-1]-NTA_lats[0])%gap_y != 0): 
 		print("Grid size should be dividable by the dimension of the selected region.")
-		print("If you choose the region of latitude  from -40 to 40, then you gird size (gap_y) should be dividable by 80.")
-		print("If you choose the region of longitude from  20 to 35, then you gird size (gap_x) should be dividable by 55.")
+		print("If you choose the region of latitude  from -40 to 40, then you gird size (Latitude ) should be dividable by 80.")
+		print("If you choose the region of longitude from  20 to 35, then you gird size (Longitude) should be dividable by 55.")
 		print("Please try again!")
 		sys.exit()
 
 	map_lon = np.arange(NTA_lons[0],NTA_lons[1],gap_x)
 	map_lat = np.arange(NTA_lats[0],NTA_lats[1],gap_y)
 	Lon,Lat = np.meshgrid(map_lon,map_lat)
-	
 	grid_lon=np.int((NTA_lons[-1]-NTA_lons[0])/gap_x)
 	grid_lat=np.int((NTA_lats[-1]-NTA_lats[0])/gap_y)
 
 	# Create arrays for level-3 statistics data.
 	grid_data = {}
+	bin_num1 = np.zeros(len(varnames)).astype(np.int)
+	bin_num2 = np.zeros(len(varnames)).astype(np.int)
 	key_idx = 0
 	for key in varnames:
 		if sts_switch[0] == True:
@@ -362,19 +351,20 @@ if __name__ =='__main__':
 			grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
 		if sts_switch[5] == True:
 			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-			bin_num1 = bin_interval1.shape[0]-1
-			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1))
-		if sts_switch[6] == True:
-			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-			bin_num1 = bin_interval1.shape[0]-1
-			bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
-			bin_num2 = bin_interval2.shape[0]-1
-			grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1,bin_num2))
+			bin_num1[key_idx] = bin_interval1.shape[0]-1
+			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx]))
+
+			if sts_switch[6] == True:
+				bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+				bin_num2[key_idx] = bin_interval2.shape[0]-1
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx],bin_num2[key_idx]))
+
 		key_idx += 1
 
 	# Sort the dictionary by alphabetizing
 	grid_data = OrderedDict(sorted(grid_data.items(), key=lambda x: x[0]))
 	
+	print("Output Variables for Level-3 File:")
 	for key in grid_data:
 		print(key)
 
@@ -399,7 +389,7 @@ if __name__ =='__main__':
 	start_time = timeit.default_timer() 
 
 	grid_data,longname_list = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,filenum, \
-											  grid_data,sts_switch,varnames,bin_interval1,bin_interval2)
+											  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx)
 		
 	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 
@@ -413,9 +403,9 @@ if __name__ =='__main__':
 	# sts_name[6]: joint histogram
 
 	sts_idx = np.array(np.where(sts_switch == True))[0]
-	print(sts_idx)
+	print("Index of User-defined Statistics:",sts_idx)
 	key_idx = 0
-	for key in varnames_CF:
+	for key in varnames:
 		for i in sts_idx:
 			if i == 0:
 				grid_data[key+'_'+sts_name[0]] = grid_data[key+'_'+sts_name[0]].reshape([grid_lat,grid_lon])
@@ -429,9 +419,9 @@ if __name__ =='__main__':
 				grid_data[key+'_'+sts_name[4]] = (grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2
 				grid_data[key+'_'+sts_name[4]] =  grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 			elif i == 5:
-				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1])
+				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
 			elif i == 6:
-				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = grid_data[key++'_'+sts_name[6]+histnames[key_idx]].reshape([grid_lat,grid_lon,bin_num1,bin_num2])
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = grid_data[key+'_'+sts_name[6]+histnames[key_idx]].reshape([grid_lat,grid_lon,bin_num1[key_idx],bin_num2[key_idx]])
 		key_idx += 1	
 
 	end_time = timeit.default_timer()
@@ -443,7 +433,7 @@ if __name__ =='__main__':
 	
 	# Create HDF5 file to store the result 
 	l3name='MYD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
-	ff=h5py.File(l3name+'_test04.h5','w')
+	ff=h5py.File(l3name+'_baseline.h5','w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
@@ -452,7 +442,6 @@ if __name__ =='__main__':
 	PC=ff.create_dataset('lon_bnd',data=map_lon)
 	PC.attrs['units']='degrees'
 	PC.attrs['long_name']='Longitude_boundaries'    
-	
 
 	for i in range(sts_idx.shape[0]):
 		cnt = 0
@@ -463,11 +452,11 @@ if __name__ =='__main__':
 			else: 
 				new_name = key
 
-			if (sts_name[i] in key) == True:  
-				print(sts_name[i],key,sts_name[i] in key)
+			if (sts_name[sts_idx[i]] in key) == True:  
+				#print(sts_name[sts_idx[i]],key,grid_data[key].shape)
 				addGridEntry(ff,new_name,'none',longname_list[cnt],grid_data[key])
 				cnt += 1
 	
 	ff.close()
 
-	print(l3name+'_test04.h5 Saved!')
+	print(l3name+'_baseline.h5 Saved!')

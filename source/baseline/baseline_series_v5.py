@@ -15,7 +15,7 @@ Created on 2019
 # V5 Updates: Refine 1d histogram and 2d histogram to be user-defined intervals 
 #			  Combine the interval with the variable names in onw file. 
 #             Separate 1d and 2d histogram interval in 2 files with all variables.
-
+# V6 Updates: Add the flexible input of polygon region
 
 import os 
 import sys
@@ -38,16 +38,16 @@ def read_filelist(loc_dir,prefix,yr,day,fileformat):
 
 def readEntry(key,ncf):
 	# Read the MODIS variables based on User's name list
-    rdval=np.array(ncf.variables[key])
+	rdval=np.array(ncf.variables[key]).astype(np.float)
+	#scale=ncf.variables[key].scale_factor
+	#offst=ncf.variables[key].add_offset
+	#(rdval+offst)*scale
+	lonam= ncf.variables[key].long_name
+	fillvalue = ncf.variables[key]._FillValue
 
-    scale=ncf.variables[key].scale_factor
-    offst=ncf.variables[key].add_offset
-    lonam= ncf.variables[key].long_name
-    fillvalue = ncf.variables[key]._FillValue
-
-    rdval[np.where(rdval == fillvalue)] = 0.0
-
-    return (rdval+offst)*scale,lonam
+	rdval[np.where(rdval == fillvalue)] = np.nan
+	
+	return rdval,lonam
 
 def read_MODIS(varnames,fname1,fname2): 
 	# Store the data from variables after reading MODIS files
@@ -100,7 +100,8 @@ def read_MODIS(varnames,fname1,fname2):
 
 	return lat,lon,data,longname_list
 
-def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,sts_switch,sts_name,bin_interval1,bin_interval2):
+def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,ave_val_2d, \
+			  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx):
 # Calculate Statistics pamameters
 					
 	#Min and Max
@@ -123,34 +124,30 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,sts_switch,s
 
 	#1D Histogram 
 	if sts_switch[5] == True:	
-		hist_idx1 = np.where(bin_interval1 <= ave_val)#[0][-1]
-		print(hist_idx1,bin_interval1,ave_val) 
-		if hist_idx1 <= (grid_data[key+'_'+sts_name[5]].shape[0]-1): 
-			hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[0]-1)
-		if hist_idx1 >= 0:  
-			hist_idx1 = 0
+		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+		hist_idx1 = np.where(bin_interval1 <= ave_val)[0]
+		hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+		if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
 		grid_data[key+'_'+sts_name[5]][z, hist_idx1] += 1
-	
+		
 	#2D Histogram 
 	if sts_switch[6] == True:
-
-		hist_idx1 = np.where(bin_interval1 <= ave_val)[0][-1]
-		if hist_idx1 <= (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1): 
-			hist_idx1 = (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1)
-		if hist_idx1 >= 0: 
-			hist_idx1 = 0
-
-		hist_idx2 = np.where(bin_interval2 <= ave_val)[0][-1]
-		if hist_idx2 <= (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1): 
-			hist_idx2 = (grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]].shape[0]-1)
-		if hist_idx2 >= 0: 
-			hist_idx2 = 0
-		grid_data[histnames[0]+'_'+sts_name[6]+histnames[1]][z, hist_idx1,hist_idx2] += 1
+		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+		hist_idx1 = np.where(bin_interval1 <= ave_val)[0]
+		hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+		if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
+		
+		bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+		hist_idx2 = np.where(bin_interval2 <= ave_val_2d)[0]
+		hist_idx2 = 0 if len(hist_idx2) == 0 else hist_idx2[-1]
+		if hist_idx2 > (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1): hist_idx2 = (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1) 
+		
+		grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z, hist_idx1,hist_idx2] += 1
 
 	return grid_data
 
 def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
-					grid_data,sts_switch,varnames,bin_interval1,bin_interval2):
+					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
 	for j in hdfs:
@@ -171,9 +168,14 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
 		lon = lon.ravel()
 		CM  = CM.ravel()
 
+		key_idx = 0
 		for key in varnames:
-			if key == 'Cloud_Fraction': continue #Ignoreing Cloud_Fraction from the input file	
+			if key == 'Cloud_Fraction': 
+				CF_key_idx = key_idx
+				key_idx += 1
+				continue #Ignoreing Cloud_Fraction from the input file	
 			data[key] = data[key][res_idx].ravel()
+			key_idx += 1
 			
 		# Locate the lat lon index into 3-Level frid box
 		idx_lon = ((lon-NTA_lons[0])/gap_x).astype(int)
@@ -193,78 +195,34 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
 				CLD_pix = np.sum(CM[np.where(latlon_index == z)]<=1).astype(float)
 				Fraction = CLD_pix / TOT_pix
 
+				pixel_data_2d = data[varnames[var_idx[CF_key_idx]]]
+				ave_val_2d = np.nansum(pixel_data_2d[np.where(latlon_index == z)]).astype(float) / TOT_pix
+				
 				# Calculate Statistics pamameters
 				grid_data = cal_stats(z,"Cloud_Fraction",grid_data, \
-									  Fraction,Fraction,CLD_pix,TOT_pix,Fraction, \
-									  sts_switch,sts_name,bin_interval1,bin_interval2)
+									  Fraction,Fraction,CLD_pix,TOT_pix,Fraction,ave_val_2d, \
+									  sts_switch,sts_name,intervals_1d,intervals_2d,CF_key_idx)
 
 				# For other variables
+				key_idx = 0
 				for key in varnames:
-					if key == 'Cloud_Fraction': continue #Ignoreing Cloud_Fraction from the input file	
+					if key == 'Cloud_Fraction': #Ignoreing Cloud_Fraction from the input file	
+						key_idx += 1
+						continue 
 					pixel_data = data[key]
 					tot_val = np.nansum(pixel_data[np.where(latlon_index == z)]).astype(float)
 					ave_val = tot_val / TOT_pix
 					max_val = np.nanmax(pixel_data[np.where(latlon_index == z)]).astype(float)
 					min_val = np.nanmin(pixel_data[np.where(latlon_index == z)]).astype(float)
+					
+					pixel_data_2d = data[varnames[var_idx[key_idx]]]
+					ave_val_2d = np.nansum(pixel_data_2d[np.where(latlon_index == z)]).astype(float) / TOT_pix
 				
 					# Calculate Statistics pamameters
 					grid_data = cal_stats(z,key,grid_data, \
-										  min_val,max_val,tot_val,TOT_pix,ave_val, \
-										  sts_switch,sts_name,bin_interval1,bin_interval2)
-
-				##Min and Max
-				#if sts_switch[0] == True:
-				#	if  grid_data["Cloud_Fraction"+'_'+sts_name[0]][z] > Fraction:
-				#		grid_data["Cloud_Fraction"+'_'+sts_name[0]][z] = Fraction
-#
-				#	if  grid_data[key+'_'+sts_name[0]][z] > MIN_val:
-				#		grid_data[key+'_'+sts_name[0]][z] = MIN_val
-	#
-				#if sts_switch[1] == True:
-				#	if  grid_data["Cloud_Fraction"+'_'+sts_name[1]][z] < Fraction:
-				#		grid_data["Cloud_Fraction"+'_'+sts_name[1]][z] = Fraction
-#
-				#	if  grid_data[key+'_'+sts_name[1]][z] > MAX_val:
-				#		grid_data[key+'_'+sts_name[1]][z] = MAX_val
-#
-				##Total and Count for Mean
-				#if (sts_switch[2] == True) | (sts_switch[4] == True):
-				#	grid_data["Cloud_Fraction"+'_'+sts_name[2]][z] += CLD_pix
-				#	grid_data["Cloud_Fraction"+'_'+sts_name[4]][z] += TOT_pix
-#
-				#	grid_data[key+'_'+sts_name[2]][z] += TOT_val
-				#	grid_data[key+'_'+sts_name[4]][z] += TOT_pix
-				#
-				##Standard Deviation 
-				#if sts_switch[3] == True:
-				#	grid_data["Cloud_Fraction"+'_'+sts_name[3]][z] += Fraction**2
-				#	grid_data[key+'_'+sts_name[3]][z] += ave_val**2
-	
-				##1D Histogram 
-				#if (sts_switch[5] == True) | (sts_switch[6] == True):
-				#	hist_bnd1 = np.linspace(lobnd1,upbnd1,bin_num[0]+1)
-				#	bin_interval1 = (upbnd1 - lobnd1)/bin_num[0]
-				#	1D_hist_cnt = np.zeros(bin_num[0])
-		#
-				#	hist_idx1 = ((Fraction-lobnd1)/bin_interval1).astype(int)
-				#	if hist_idx1 <= 1D_hist_cnt.shape[0]: 
-				#		hist_idx1 = 1D_hist_cnt.shape[0]
-				#	if hist_idx1 >= 0: 
-				#		hist_idx1 = 0
-				#	1D_hist_cnt[z, hist_idx1] += 1
-#	
-				##2D Histogram 
-				#if sts_switch[6] == True:
-				#	hist_bnd2 = np.linspace(lobnd2,upbnd2,bin_num[1]+1)
-				#	2D_hist_cnt = np.zeros((bin_num[0],bin_num[1]))
-				#	bin_interval2 = (upbnd2 - lobnd2)/bin_num[1]
-#	
-				#	hist_idx2 = ((Fraction-lobnd2)/bin_interval2).astype(int)
-				#	if hist_idx2 <= 2D_hist_cnt.shape[0]: 
-				#		hist_idx2 = 2D_hist_cnt.shape[0]
-				#	if hist_idx2 >= 0: 
-				#		hist_idx2 = 0
-				#	2D_hist_cnt = [z, hist_idx1,hist_idx2] += 1
+										  min_val,max_val,tot_val,TOT_pix,ave_val,ave_val_2d, \
+										  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx)
+					key_idx += 1
 
 	return grid_data,longname_list
 
@@ -316,8 +274,9 @@ if __name__ =='__main__':
 			# Read the joint histogram names from the variable name list
 			jvarlist = sys.argv[9]
 			text_file = np.array(pd.read_csv(jvarlist, header=0, delim_whitespace=True)) #open(varlist, "r")
-			histnames = text_file[:,1] #text_file.read().split('\n')
-			intervals_2d = text_file[:,2]
+			histnames = text_file[:,1] 
+			var_idx   = text_file[:,2] #This is the index of the input variable name which is used for 2D histogram
+			intervals_2d = text_file[:,3]
 		#else:
 		#bin_num2,bin_interval2 = 0,0
 		
@@ -350,6 +309,8 @@ if __name__ =='__main__':
 
 	# Create arrays for level-3 statistics data.
 	grid_data = {}
+	bin_num1 = np.zeros(len(varnames)).astype(np.int)
+	bin_num2 = np.zeros(len(varnames)).astype(np.int)
 	key_idx = 0
 	for key in varnames:
 		if sts_switch[0] == True:
@@ -362,19 +323,19 @@ if __name__ =='__main__':
 			grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
 		if sts_switch[5] == True:
 			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-			bin_num1 = bin_interval1.shape[0]-1
-			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1))
-		if sts_switch[6] == True:
-			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-			bin_num1 = bin_interval1.shape[0]-1
-			bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
-			bin_num2 = bin_interval2.shape[0]-1
-			grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1,bin_num2))
+			bin_num1[key_idx] = bin_interval1.shape[0]-1
+			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx]))
+
+			if sts_switch[6] == True:
+				bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+				bin_num2[key_idx] = bin_interval2.shape[0]-1
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx],bin_num2[key_idx]))
 		key_idx += 1
 
 	# Sort the dictionary by alphabetizing
 	grid_data = OrderedDict(sorted(grid_data.items(), key=lambda x: x[0]))
 	
+	print("Output Variables for Level-3 File:")
 	for key in grid_data:
 		print(key)
 
@@ -399,7 +360,7 @@ if __name__ =='__main__':
 	start_time = timeit.default_timer() 
 
 	grid_data,longname_list = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,filenum, \
-											  grid_data,sts_switch,varnames,bin_interval1,bin_interval2)
+											  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx)
 		
 	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 
@@ -415,7 +376,7 @@ if __name__ =='__main__':
 	sts_idx = np.array(np.where(sts_switch == True))[0]
 	print(sts_idx)
 	key_idx = 0
-	for key in varnames_CF:
+	for key in varnames:
 		for i in sts_idx:
 			if i == 0:
 				grid_data[key+'_'+sts_name[0]] = grid_data[key+'_'+sts_name[0]].reshape([grid_lat,grid_lon])
@@ -429,9 +390,9 @@ if __name__ =='__main__':
 				grid_data[key+'_'+sts_name[4]] = (grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2
 				grid_data[key+'_'+sts_name[4]] =  grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 			elif i == 5:
-				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1])
+				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
 			elif i == 6:
-				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = grid_data[key++'_'+sts_name[6]+histnames[key_idx]].reshape([grid_lat,grid_lon,bin_num1,bin_num2])
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = grid_data[key+'_'+sts_name[6]+histnames[key_idx]].reshape([grid_lat,grid_lon,bin_num1[key_idx],bin_num2[key_idx]])
 		key_idx += 1	
 
 	end_time = timeit.default_timer()
@@ -464,7 +425,7 @@ if __name__ =='__main__':
 				new_name = key
 
 			if (sts_name[i] in key) == True:  
-				print(sts_name[i],key,sts_name[i] in key)
+				#print(sts_name[i],key,sts_name[i] in key)
 				addGridEntry(ff,new_name,'none',longname_list[cnt],grid_data[key])
 				cnt += 1
 	
