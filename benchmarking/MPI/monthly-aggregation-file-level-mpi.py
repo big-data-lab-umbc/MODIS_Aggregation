@@ -157,7 +157,7 @@ if __name__ =='__main__':
 			cloud_pix += results[1,:]
 
 		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
-		Mean_Fraction = (total_pix / cloud_pix)
+		Mean_Fraction = (cloud_pix / total_pix)
 		
 		print('Mean_Fraction:')
 		print( Mean_Fraction  )
