@@ -9,6 +9,8 @@
 #SBATCH --output=slurm-%x-%j-%u-%N.out
 #SBATCH --error=slurm-%x-%j-%u-%N.out
 
+##sbatch command example: sbatch -N2 runMPI-monthly-aggregation.slurm a.py
+
 echo "node number: $SLURM_NNODES"
 echo "nodes: $(echo $SLURM_NODELIST | cut -d'[' -f 2 | cut -d']' -f 1)"
 
