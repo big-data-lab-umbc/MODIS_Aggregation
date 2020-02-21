@@ -122,17 +122,17 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,ave_val_2d, 
 			grid_data[key+'_'+sts_name[0]][z] = min_val
 	
 	if sts_switch[1] == True:
-		if  grid_data[key+'_'+sts_name[1]][z] > max_val:
+		if  grid_data[key+'_'+sts_name[1]][z] < max_val:
 			grid_data[key+'_'+sts_name[1]][z] = max_val
 
 	#Total and Count for Mean
 	if (sts_switch[2] == True) | (sts_switch[3] == True):
-		grid_data[key+'_'+sts_name[2]][z] += ave_val
-		grid_data[key+'_'+sts_name[3]][z] += 1
+		grid_data[key+'_'+sts_name[2]][z] += tot_val
+		grid_data[key+'_'+sts_name[3]][z] += count
 	
 	#Standard Deviation 
 	if sts_switch[4] == True:
-		grid_data[key+'_'+sts_name[4]][z] += ave_val**2
+		grid_data[key+'_'+sts_name[4]][z] += tot_val**2
 
 	#1D Histogram 
 	if sts_switch[5] == True:	
@@ -162,7 +162,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
 					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in range(5):#hdfs:
+	for j in hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 	
 		# Read Level-2 MODIS data
@@ -240,6 +240,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
 					grid_data = cal_stats(z,key,grid_data, \
 										  min_val,max_val,tot_val,TOT_pix,ave_val,ave_val_2d, \
 										  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx)
+
 					key_idx += 1
 
 	return grid_data,longname_list
@@ -373,18 +374,19 @@ if __name__ =='__main__':
 
 	years  = np.array([2008])
 	months = np.array([1])
-	days = np.arange(1,2,dtype=np.int) 
+	days = np.arange(1,32,dtype=np.int) 
 
-	for yr,day in zip(years,days):
-		yc ='%04i' % yr
+	for day in days: #for yr,day in zip(years,days):
+		yc ='%04i' % years[0]
 		dc ='%03i' % day
+		#print(yc,dc)
 		fname_tmp1 = read_filelist(MYD06_dir,MYD06_prefix,yc,dc,fileformat)
 		fname_tmp2 = read_filelist(MYD03_dir,MYD03_prefix,yc,dc,fileformat)
 		fname1 = np.append(fname1,fname_tmp1)
 		fname2 = np.append(fname2,fname_tmp2)
 
 	filenum = np.arange(len(fname1))
-
+	print(len(fname1))
 	# Start counting operation time
 	start_time = timeit.default_timer() 
 
@@ -414,9 +416,10 @@ if __name__ =='__main__':
 			elif i == 2:
 				grid_data[key+'_'+sts_name[2]] = (grid_data[key+'_'+sts_name[2]] / grid_data[key+'_'+sts_name[3]])
 				grid_data[key+'_'+sts_name[2]] =  grid_data[key+'_'+sts_name[2]].reshape([grid_lat,grid_lon])
+			elif i == 3:
 				grid_data[key+'_'+sts_name[3]] =  grid_data[key+'_'+sts_name[3]].reshape([grid_lat,grid_lon])
 			elif i == 4:
-				grid_data[key+'_'+sts_name[4]] = (grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2
+				grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
 				grid_data[key+'_'+sts_name[4]] =  grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 			elif i == 5:
 				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
@@ -433,7 +436,7 @@ if __name__ =='__main__':
 	
 	# Create HDF5 file to store the result 
 	l3name='MYD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
-	ff=h5py.File(l3name+'_baseline.h5','w')
+	ff=h5py.File(l3name+'_baseline_pixel_cnt_max.h5','w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
@@ -459,4 +462,4 @@ if __name__ =='__main__':
 	
 	ff.close()
 
-	print(l3name+'_baseline.h5 Saved!')
+	print(l3name+'_baseline_pixel_cnt_max.h5 Saved!')
