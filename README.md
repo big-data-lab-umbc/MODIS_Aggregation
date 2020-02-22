@@ -13,6 +13,7 @@ The code is tested with Python 3.7
 - Co-I: Kerry Meyer, NASA Goddard Space Flight Center
 - Developer: Gala Wind, NASA Goddard Space Flight Center
 - Developer: Paul Hubanks, NASA Goddard Space Flight Center
+- PhD student: Jianyu Zheng, Department of Physics, UMBC
 - PhD student: Chamara Rajapakshe, Department of Physics, UMBC
 - PhD student: Pei Guo, Department of Information Systems, UMBC
 - PhD student: Redwan Walid, Department of Information Systems, UMBC
