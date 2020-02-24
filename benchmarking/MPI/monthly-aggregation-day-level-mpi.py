@@ -13,6 +13,7 @@ import os
 import sys
 import h5py
 import glob
+import time
 import timeit
 import random
 import numpy as np
@@ -63,8 +64,8 @@ def run_modis_aggre(dayloop):
 		M03_files = sorted(glob.glob(MYD03_dir + "MYD03.A2008" + dc + "*"))
 		M06_files = sorted(glob.glob(MYD06_dir + "MYD06_L2.A2008" + dc + "*"))
 
-		for j in range(len(M06_files)):
-			print("File Number: {} / {} in day {}".format(j,len(M06_files),day))
+		for j in range(2):#len(M06_files)):
+			#print("File Number: {} / {} in day {}".format(j,len(M06_files),day))
 			
 			# Read Level-2 MODIS data
 			lat,lon,CM = read_MODIS(M06_files[j],M03_files[j])
@@ -134,6 +135,7 @@ if __name__ =='__main__':
 		files = np.arange(len(day_num)+remain)
 		tasks = np.array(np.split(files,size))
 		dayloop = tasks[rank]
+		size = len(day_num)
 
 	elif ppn_file >= remain: 
 		# Distribute the day's loops into MPI ppns
@@ -183,8 +185,10 @@ if __name__ =='__main__':
 		# Create HDF5 file to store the result 
 		save_output(Mean_Fraction)
 		
+		comm.Abort()
 
-	else:
+	else: 
 		print("Process {} finished".format(rank))
 		send_req = comm.Isend(results, dest=0, tag=0)
 		send_req.wait()
+		
