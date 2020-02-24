@@ -64,7 +64,7 @@ def run_modis_aggre(dayloop):
 		M03_files = sorted(glob.glob(MYD03_dir + "MYD03.A2008" + dc + "*"))
 		M06_files = sorted(glob.glob(MYD06_dir + "MYD06_L2.A2008" + dc + "*"))
 
-		for j in range(2):#len(M06_files)):
+		for j in range(len(M06_files)):
 			#print("File Number: {} / {} in day {}".format(j,len(M06_files),day))
 			
 			# Read Level-2 MODIS data
