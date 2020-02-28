@@ -50,7 +50,7 @@ def readEntry(key,ncf):
 	rdval[np.where(rdval == fillvalue)] = np.nan
 
 	#Sampling the variable
-	rdval = rdval[::spl_num,::spl_num]
+	rdval = rdval[2::spl_num,3::spl_num]
 
 	return rdval,lonam
 
@@ -66,7 +66,7 @@ def read_MODIS(varnames,fname1,fname2):
 	#data['CM'] = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
 	
 	d06_CM = ncfile.variables['Cloud_Mask_1km'][:,:,0]
-	CM1km  = d06_CM[::spl_num,::spl_num]
+	CM1km  = d06_CM[2::spl_num,3::spl_num]
 	data['CM'] = (np.array(CM1km,dtype='byte') & 0b00000110) >>1
 	data['CM'] = data['CM'].astype(np.float)
 
@@ -86,8 +86,8 @@ def read_MODIS(varnames,fname1,fname2):
 	ncfile=Dataset(fname2,'r')
 	d03_lat  = np.array(ncfile.variables['Latitude'][:,:])
 	d03_lon  = np.array(ncfile.variables['Longitude'][:,:])
-	lat  = d03_lat[::spl_num,::spl_num]
-	lon  = d03_lon[::spl_num,::spl_num]
+	lat  = d03_lat[2::spl_num,3::spl_num]
+	lon  = d03_lon[2::spl_num,3::spl_num]
 	attr_lat = ncfile.variables['Latitude']._FillValue
 	attr_lon = ncfile.variables['Longitude']._FillValue
 
