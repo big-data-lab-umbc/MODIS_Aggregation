@@ -1,0 +1,6 @@
+Variable_name                Joint_Variable_name  Variable_Index      Joint_Intervals 
+cloud_top_pressure_1km       Emissivity           2                   0.25,0.725,0.975
+cloud_top_temperature_1km    Pressure             0                   199.5,550.0,900.0
+cloud_emissivity_1km         Pressure             0                   199.5,550.0,900.0
+Cloud_Fraction               Pressure             0                   199.5,550.0,900.0
+cloud_top_height_1km         Pressure             0                   199.5,550.0,900.0
