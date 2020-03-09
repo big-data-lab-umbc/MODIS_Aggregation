@@ -32,13 +32,6 @@ from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
 
-def numberOfDays(year, month):
-	first_of_entered_month = datetime.date(year, month, 1)
-	someday_next_month = first_of_entered_month + datetime.timedelta(days=31)
-	first_of_next_month = someday_next_month.replace(day=1)
-	last_of_entered_month = first_of_next_month - datetime.timedelta(days=1)
-	return last_of_entered_month.day
-	
 def read_filelist(loc_dir,prefix,yr,day,fileformat):
 	# Read the filelist in the specific directory
 	str = os.popen("ls "+ loc_dir + prefix + yr + day + "*."+fileformat).read()
