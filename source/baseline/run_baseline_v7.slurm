@@ -27,7 +27,7 @@
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-python3 baseline_series_v7.py input_path.csv 2008/01/01 2008/01/31 [-90,90,-180,180] [1,1] [3] 1 1 1 1 1 1 1 input_file.csv input_Jhist.csv
+python3 baseline_series_v7.py data_path.csv 2008/01/01 2008/01/31 [-90,90,-180,180] [1,1] [3] 1 1 1 1 1 1 1 input_file.csv input_Jhist.csv
 
 # Example 2: Choose the time from 2008/01/01 to 2008/01/16 with the region [-20,20,0,35] with grid size [1,1] with sampling rate 2
 #			 Calculate Minimum, Maximum, Mean, Pixel Counts. 
@@ -37,7 +37,7 @@ python3 baseline_series_v7.py input_path.csv 2008/01/01 2008/01/31 [-90,90,-180,
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-#python3 baseline_series_v7.py input_path.csv 2008/01/01 2008/01/01 [-20,20,0,35] [1,1] [2] 1 1 1 0 0 0 0 input_file.csv input_Jhist.csv
+#python3 baseline_series_v7.py data_path.csv 2008/01/01 2008/01/01 [-20,20,0,35] [1,1] [2] 1 1 1 0 0 0 0 input_file.csv input_Jhist.csv
 
 # Example 3: Choose the time from 2008/01/01 to 2008/01/09 with the region [-90,90,-180,180] with grid size [0.5,0.625] with sampling rate 3
 #			 Calculate Standard Deviation, Histogram and Joint Histogram. 
@@ -47,4 +47,4 @@ python3 baseline_series_v7.py input_path.csv 2008/01/01 2008/01/31 [-90,90,-180,
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-#python3 baseline_series_v7.py input_path.csv 2008/01/01 2008/01/10 [-90,90,-180,180] [0.5,0.625] [3] 0 0 0 0 1 1 1 input_file.csv input_Jhist.csv
+#python3 baseline_series_v7.py data_path.csv 2008/01/01 2008/01/10 [-90,90,-180,180] [0.5,0.625] [3] 0 0 0 0 1 1 1 input_file.csv input_Jhist.csv

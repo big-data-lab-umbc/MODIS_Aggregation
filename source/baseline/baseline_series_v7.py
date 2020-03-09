@@ -325,6 +325,8 @@ if __name__ =='__main__':
 	MYD06_prefix = data_path_file[0,1] #'MYD06_L2.A'
 	MYD03_dir    = data_path_file[1,0] #'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
 	MYD03_prefix = data_path_file[1,1] #'MYD03.A'
+	Output_dir    = data_path_file[2,0]
+	Output_prefix = data_path_file[2,1]
 	fileformat = 'hdf'
 	
 	#-------------STEP 2: Set up spactial and temporal resolution & variable names----------
@@ -456,7 +458,7 @@ if __name__ =='__main__':
 	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
 	
 	# Create HDF5 file to store the result 
-	l3name='MYD08_M3'+'A{:04d}{:02d}'.format(years[0],months[0])
+	l3name=Output_dir+Output_prefix+'A{:04d}{:02d}'.format(years[0],months[0])
 	ff=h5py.File(l3name+'_baseline_pixel_cnt_max.h5','w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
