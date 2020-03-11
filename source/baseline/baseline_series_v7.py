@@ -6,7 +6,7 @@ Main Program: Run MODIS AGGREGATION IN SERIES WITH FLEXIBLE STATISTICS
 
 Created on 2019
 
-@author: Jianyu Zheng
+@author: Jianyu (Kevin) Zheng 
 """
 
 # V2 Updates: Add statistics for flexible variables
