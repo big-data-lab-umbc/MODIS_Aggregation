@@ -6,7 +6,7 @@ Main Program: Run MODIS AGGREGATION IN SERIES WITH FLEXIBLE STATISTICS
 
 Created on 2019
 
-@author: Jianyu (Kevin) Zheng 
+@author: Jianyu Zheng
 """
 
 # V2 Updates: Add statistics for flexible variables
@@ -32,6 +32,13 @@ from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
 
+def numberOfDays(year, month):
+	first_of_entered_month = datetime.date(year, month, 1)
+	someday_next_month = first_of_entered_month + datetime.timedelta(days=31)
+	first_of_next_month = someday_next_month.replace(day=1)
+	last_of_entered_month = first_of_next_month - datetime.timedelta(days=1)
+	return last_of_entered_month.day
+	
 def read_filelist(loc_dir,prefix,yr,day,fileformat):
 	# Read the filelist in the specific directory
 	str = os.popen("ls "+ loc_dir + prefix + yr + day + "*."+fileformat).read()
@@ -325,8 +332,6 @@ if __name__ =='__main__':
 	MYD06_prefix = data_path_file[0,1] #'MYD06_L2.A'
 	MYD03_dir    = data_path_file[1,0] #'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
 	MYD03_prefix = data_path_file[1,1] #'MYD03.A'
-	Output_dir    = data_path_file[2,0]
-	Output_prefix = data_path_file[2,1]
 	fileformat = 'hdf'
 	
 	#-------------STEP 2: Set up spactial and temporal resolution & variable names----------
@@ -407,6 +412,7 @@ if __name__ =='__main__':
 		fname_tmp2 = read_filelist(MYD03_dir,MYD03_prefix,yc,dc,fileformat)
 		fname1 = np.append(fname1,fname_tmp1)
 		fname2 = np.append(fname2,fname_tmp2)
+	print(year,month)
 
 	filenum = np.arange(len(fname1))
 	print(len(fname1))
@@ -458,8 +464,8 @@ if __name__ =='__main__':
 	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
 	
 	# Create HDF5 file to store the result 
-	l3name=Output_dir+Output_prefix+'A{:04d}{:02d}'.format(years[0],months[0])
-	ff=h5py.File(l3name+'_baseline_pixel_cnt_max.h5','w')
+	l3name='MYD08_M3'+'A{:04d}{:02d}'.format(year,month)
+	ff=h5py.File(l3name+'_baseline_example.h5','w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
@@ -485,4 +491,4 @@ if __name__ =='__main__':
 	
 	ff.close()
 
-	print(l3name+'_baseline_pixel_cnt_max.h5 Saved!')
+	print(l3name+'_baseline_example.h5 Saved!')
