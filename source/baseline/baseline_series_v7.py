@@ -32,13 +32,6 @@ from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
 
-def numberOfDays(year, month):
-	first_of_entered_month = datetime.date(year, month, 1)
-	someday_next_month = first_of_entered_month + datetime.timedelta(days=31)
-	first_of_next_month = someday_next_month.replace(day=1)
-	last_of_entered_month = first_of_next_month - datetime.timedelta(days=1)
-	return last_of_entered_month.day
-	
 def read_filelist(loc_dir,prefix,yr,day,fileformat):
 	# Read the filelist in the specific directory
 	str = os.popen("ls "+ loc_dir + prefix + yr + day + "*."+fileformat).read()
@@ -169,7 +162,7 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,ave_val_2d, 
 
 	return grid_data
 
-def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,hdfs, \
+def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,hdfs, \
 					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
@@ -419,7 +412,7 @@ if __name__ =='__main__':
 	# Start counting operation time
 	start_time = timeit.default_timer() 
 
-	grid_data,longname_list = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,filenum, \
+	grid_data,longname_list = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
 											  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx)
 		
 	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
