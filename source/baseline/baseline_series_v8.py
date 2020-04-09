@@ -275,6 +275,7 @@ def addGridEntry(f,name,units,long_name,data):
 	PCentry.dims[1].label='lon_bnd'
 	PCentry.attrs['units']=units
 	PCentry.attrs["long_name"]=np.str(long_name)
+	PCentry.attrs['scale_factor']=scale_factor
 
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process

@@ -35,7 +35,7 @@ cld_fraction2[np.where(cld_fraction2 == fillvalue)] = 0.0
 
 diff = cld_fraction1.round(4) - cld_fraction2.round(4)
 #diff[np.where(((diff/cld_fraction2)*100) > 100)] = np.nan
-diff[np.where(((diff/cld_fraction2)*100) < 165)] = np.nan
+#diff[np.where(((diff/cld_fraction2)*100) < 165)] = np.nan
 print(cld_fraction1,cld_fraction2,scale_factor)
 
 lon = np.arange(-180,180,1)
@@ -48,7 +48,7 @@ m = Basemap(projection='cyl',fix_aspect=False,lon_0=0,lat_0=0)
 m.drawcountries()
 m.drawcoastlines(linewidth=0.4)
 #((diff/cld_fraction2)*100).astype(int),
-cset = plt.contourf(Lon, Lat, cld_fraction2, levels, cmap='jet')#, vmin=165, vmax=100)
+cset = plt.contourf(Lon, Lat, diff*100, levels, cmap='bwr', vmin=-10, vmax=10)
 ax = plt.gca()
 ax.set_xticks([-150,-75,0,75,150])
 ax.set_yticks([-60,-30,0,30,60])
@@ -59,8 +59,8 @@ plt.title('MODIS Monthly Mean Cloud Fraction from Original Product (01/2008)',fo
 
 cg = plt.colorbar(cset)
 #cg.set_ticks([0.0,0.2,0.4,0.6,0.8,1.0]) #np.arange(165,250,6)
-#cg.set_label('Cloud Total Fraction Difference (%)',fontsize=12)
-cg.set_label('Cloud Total Fraction',fontsize=12)
+cg.set_label('Cloud Total Fraction Difference (%)',fontsize=12)
+#cg.set_label('Cloud Total Fraction',fontsize=12)
 
 plt.savefig('MODIS_Mean_monthly_origin.png',dpi=600)
 plt.show()
