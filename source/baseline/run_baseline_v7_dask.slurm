@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=MODIS_agg
-#SBATCH --output=modis_files_v5.out
-#SBATCH --error=modis_files_v5.err
+#SBATCH --output=modis_files_v7_dask.out
+#SBATCH --error=modis_files_v7_dask.err
 #SBATCH --partition=high_mem
 #SBATCH --qos=medium+
 #SBATCH --nodes=1

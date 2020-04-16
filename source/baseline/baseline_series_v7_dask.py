@@ -129,7 +129,7 @@ def read_MODIS(varnames,fname1,fname2):
 	return lat,lon,data,longname_list
 
 def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,ave_val_2d, \
-			  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx):
+			  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx,histnames):
 # Calculate Statistics pamameters
 					
 	#Min and Max
@@ -175,7 +175,7 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,ave_val,ave_val_2d, 
 	return grid_data
 
 def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lat,grid_lon,gap_x,gap_y,filenum, \
-					sts_switch,varnames,intervals_1d,intervals_2d,var_idx,sts_name):
+					sts_switch,varnames,intervals_1d,intervals_2d,var_idx,sts_name,histnames):
 	# Create arrays for level-3 statistics data
 	grid_data = {}
 	bin_num1 = np.zeros(len(varnames)).astype(np.int)
@@ -270,7 +270,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lat,grid_lon,gap_x,gap_
 			# Calculate Statistics pamameters
 			grid_data = cal_stats(z,"Cloud_Fraction",grid_data, \
 								  Fraction,Fraction,CLD_pix,TOT_pix,Fraction,ave_val_2d, \
-								  sts_switch,sts_name,intervals_1d,intervals_2d,CF_key_idx)
+								  sts_switch,sts_name,intervals_1d,intervals_2d,CF_key_idx,histnames)
 
 			# For other variables
 			key_idx = 0
@@ -293,7 +293,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lat,grid_lon,gap_x,gap_
 				# Calculate Statistics pamameters
 				grid_data = cal_stats(z,key,grid_data, \
 									  min_val,max_val,tot_val,TOT_pix,ave_val,ave_val_2d, \
-									  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx)
+									  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx,histnames)
 
 				key_idx += 1
 
@@ -463,17 +463,18 @@ if __name__ =='__main__':
 	print(len(fname1))
 	# Start counting operation time
 	start_time = timeit.default_timer() 
-	kwargv = {"NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lat": grid_lat, "grid_lon": grid_lon, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "sts_name":sts_name}
+	kwargv = {"NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lat": grid_lat, "grid_lon": grid_lon, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "sts_name":sts_name, "histnames":histnames}
 	#grid_data,longname_list = run_modis_aggre(fname1,fname2,**kwargv)
 
 	cluster = SLURMCluster(cores=1, memory='64 GB', project='pi_jianwu',\
                        queue='high_mem', walltime='02:00:00', job_extra=['--exclusive', '--qos=normal+'])
-	cluster.scale(4)
+	cluster.scale(8)
 	client = Client(cluster)
 	tt = client.map(run_modis_aggre, fname1, fname2, **kwargv)
 	for future, result in as_completed(tt, with_results= True):
 		print("future result")
 		print(result)
+		longname_list = result[1]
 		result = result[0]
 		# aggregate the result
 		#Min and Max
@@ -493,19 +494,29 @@ if __name__ =='__main__':
 				key_idx = 0
 				for key in varnames:
 					if sts_switch[0] == True:
-						print("t_grid_data[key+'_'+sts_name[0]][z]:")
-						print(t_grid_data[key+'_'+sts_name[0]][z])
-						print("result[key+'_'+sts_name[0]][z]")
-						print(result[key+'_'+sts_name[0]][z])
+						#print("t_grid_data[key+'_'+sts_name[0]][z]:")
+						#print(t_grid_data[key+'_'+sts_name[0]][z])
+						#print("result[key+'_'+sts_name[0]][z]")
+						#print(result[key+'_'+sts_name[0]][z])
 						if  t_grid_data[key+'_'+sts_name[0]][z] > result[key+'_'+sts_name[0]][z]:
 							t_grid_data[key+'_'+sts_name[0]][z] = result[key+'_'+sts_name[0]][z]
 					if sts_switch[1] == True:
-						if  t_grid_data[key+'_'+sts_name[1]][z] < result[key+'_'+sts_name[0]][z]:
-							t_grid_data[key+'_'+sts_name[1]][z] = result[key+'_'+sts_name[0]][z]
+						if  t_grid_data[key+'_'+sts_name[1]][z] < result[key+'_'+sts_name[1]][z]:
+							t_grid_data[key+'_'+sts_name[1]][z] = result[key+'_'+sts_name[1]][z]
 					#Total and Count for Mean
 					if (sts_switch[2] == True) | (sts_switch[3] == True):
 						t_grid_data[key+'_'+sts_name[2]][z] += result[key+'_'+sts_name[2]][z]
 						t_grid_data[key+'_'+sts_name[3]][z] += result[key+'_'+sts_name[3]][z]
+					#standard deviation
+					if sts_switch[4] == True:
+						t_grid_data[key+'_'+sts_name[4]][z] += result[key+'_'+sts_name[4]][z]
+					#1D Histogram
+					if sts_switch[5] == True:
+						t_grid_data[key+'_'+sts_name[5]][z] += result[key+'_'+sts_name[5]][z]
+					#2D Histogram
+					if sts_switch[6] == True:
+						t_grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z] += result[key+'_'+sts_name[6]+histnames[key_idx]][z]
+
 					key_idx += 1			
 
 	#grid_data,longname_list = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,gap_x,gap_y,filenum, \
@@ -556,7 +567,7 @@ if __name__ =='__main__':
 	
 	# Create HDF5 file to store the result 
 	l3name='MYD08_M3'+'A{:04d}{:02d}'.format(year,month)
-	ff=h5py.File(l3name+'_baseline_examplei_dask.h5','w')
+	ff=h5py.File(l3name+'_baseline_examplei_dask_fix_max_1d2dhistogram.h5','w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
@@ -582,4 +593,4 @@ if __name__ =='__main__':
 	
 	ff.close()
 
-	print(l3name+'_baseline_example_dask.h5 Saved!')
+	print(l3name+'_baseline_examplei_dask_fix_max_1d2dhistogram.h5 Saved!')
