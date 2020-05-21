@@ -142,15 +142,17 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 	#1D Histogram 
 	if sts_switch[5] == True:	
 		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-		if all_val.size == 1: all_val = np.array([all_val])
-		for i in range(all_val.size):
-			hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
-			hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
-			if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
-			grid_data[key+'_'+sts_name[5]][z, hist_idx1] += 1
-		#else:
-		#	hist_idx1 = np.histogram(all_val,bins=bin_interval1)[0]
-		#	grid_data[key+'_'+sts_name[5]][z,:] += hist_idx1
+		if all_val.size == 1: 
+			all_val = np.array([all_val])
+		else:
+			hist_idx1 = np.histogram(all_val,bins=bin_interval1)[0]
+			grid_data[key+'_'+sts_name[5]][z,:] += hist_idx1
+
+		#for i in range(all_val.size):
+		#	hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
+		#	#hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+		#	#if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
+		#	grid_data[key+'_'+sts_name[5]][z, hist_idx1] += 1
 		
 	#2D Histogram 
 	if sts_switch[6] == True:
@@ -159,20 +161,20 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 		if all_val.size == 1:
 			all_val = np.array([all_val])
 			all_val_2d = np.array([all_val_2d])
-		for i in range(all_val_2d.size):
-			hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
-			hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
-			if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
-		
-			hist_idx2 = np.where(bin_interval2 <= all_val_2d[i])[0]
-			hist_idx2 = 0 if len(hist_idx2) == 0 else hist_idx2[-1]
-			if hist_idx2 > (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1): hist_idx2 = (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1) 
+		else:
+			hist_idx2 = np.histogram2d(all_val,all_val_2d,bins=(bin_interval1,bin_interval2))[0]
+			grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z,:,:] += hist_idx2
 
-			grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z, hist_idx1,hist_idx2] += 1
-		#else:
-		#	hist_idx2 = np.histogram2d(all_val,all_val_2d,bins=(bin_interval1,bin_interval2))[0]
-		#	grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z,:,:] += hist_idx2
-
+		#for i in range(all_val_2d.size):
+		#	hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
+		#	hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+		#	if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
+		#
+		#	hist_idx2 = np.where(bin_interval2 <= all_val_2d[i])[0]
+		#	hist_idx2 = 0 if len(hist_idx2) == 0 else hist_idx2[-1]
+		#	if hist_idx2 > (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1): hist_idx2 = (grid_data[key+'_'+sts_name[6]+histnames[key_idx]].shape[2]-1) 
+		#
+		#	grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z, hist_idx1,hist_idx2] += 1
 	return grid_data
 
 def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,hdfs, \
@@ -243,6 +245,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 						continue 
 					pixel_data = data[key]
 					tot_val = np.nansum(pixel_data[np.where(latlon_index == z)]).astype(float)
+					#ave_val = tot_val / TOT_pix
 					all_val = np.array(pixel_data[np.where(latlon_index == z)]).astype(float)
 					max_val = np.nanmax(pixel_data[np.where(latlon_index == z)]).astype(float)
 					min_val = np.nanmin(pixel_data[np.where(latlon_index == z)]).astype(float)
@@ -274,7 +277,9 @@ def addGridEntry(f,name,units,long_name,data):
 	PCentry.dims[0].label='lat_bnd'
 	PCentry.dims[1].label='lon_bnd'
 	PCentry.attrs['units']=units
+	PCentry.attrs['_FillValue']=fillvalue
 	PCentry.attrs["long_name"]=np.str(long_name)
+	PCentry.attrs['scale_factor']=scale_factor
 
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
