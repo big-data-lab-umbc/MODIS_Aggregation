@@ -1,0 +1,5 @@
+Demo command to run the same slurm file with different sampling rates.
+
+1. running on 12 nodes with sampling ratio as 3:
+
+sampling=3 && sbatch -N12 --export=sampling=$sampling --job-name=$sampling-sampling runSparkAppOnTaki-monthly-aggregation-file-level-sampling.slurm
