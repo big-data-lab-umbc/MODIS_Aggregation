@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import time
 import h5py
 import xarray as xr
+import sys
 from pyspark.sql import SparkSession
 
 def aggregateOneFileData(M06_file, M03_file, sampling_rate):
@@ -66,9 +67,10 @@ def save_output(cf, sampling_rate, node_num):
 
 if __name__ =='__main__':
 
-    t0 = time.time()
     sampling_rate = int(sys.argv[1])
     #node_num = int(sys.argv[2])
+    print ("running with " + sys.argv[1] + " sampling on " + sys.argv[2] + "nodes.")
+    t0 = time.time()
 
     #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
     #M03_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
