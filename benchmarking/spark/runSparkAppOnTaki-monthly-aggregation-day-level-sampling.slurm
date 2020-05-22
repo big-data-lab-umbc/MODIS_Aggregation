@@ -5,7 +5,7 @@
 #SBATCH --output=slurm-%x-%j-%u.out
 #SBATCH --error=slurm-%x-%j-%u.out
 
-#Demo command to run the same slurm on 2 nodes with sampling rate as 3: node=2 && sampling=3 && sbatch --export=sampling=$sampling,node=$node --job-name=file-level-$node-node-$sampling-sampling --nodes=$node runSparkAppOnTaki-monthly-aggregation-file-level-sampling.slurm
+#Demo command to run the same slurm on 2 nodes with sampling rate as 3: node=2 && sampling=3 && sbatch --export=sampling=$sampling,node=$node --job-name=$node-node-$sampling-sampling --nodes=$node runSparkAppOnTaki-monthly-aggregation-file-level-sampling.slurm
 
 export CONDA_PREFIX=/umbc/xfs1/cybertrn/common/Softwares/anaconda3/
 export PYSPARK_PYTHON=$CONDA_PREFIX/bin/python
@@ -13,7 +13,7 @@ export PYSPARK_DRIVER_PYTHON=$CONDA_PREFIX/bin/python
 
 SPARK=/umbc/xfs1/cybertrn/common/Softwares/spark/spark-2.4.0-bin-hadoop2.7
 MY_SPARK=/home/jianwu/jianwu_common/pei_spark/my-spark-jianwu
-SPARK_PYTHON_FILE="/home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/spark/monthly-aggregation-file-level-spark-sampling.py $SLURM_NNODES $sampling"
+SPARK_PYTHON_FILE="/home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/spark/monthly-aggregation-file-level-spark-sampling.py $sampling $SLURM_NNODES"
 
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
