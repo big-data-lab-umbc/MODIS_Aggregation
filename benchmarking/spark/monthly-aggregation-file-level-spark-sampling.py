@@ -53,7 +53,7 @@ def aggregateOneFileData(M06_file, M03_file, sampling_rate):
     return cloud_pix, total_pix
 
 
-def save_output(cf, sampling_rate, node_num):
+def save_output(cf, node_num, sampling_rate):
     cf1 = xr.DataArray(cf)
     output_file_name = "monthlyCloudFraction-file-level-" + node_num + "-nodes-" + sampling_rate + "-sampling"
     cf1.to_netcdf(output_file_name + ".nc")
@@ -67,9 +67,12 @@ def save_output(cf, sampling_rate, node_num):
 
 if __name__ =='__main__':
 
-    sampling_rate = int(sys.argv[1])
-    #node_num = int(sys.argv[2])
-    print ("running with " + sys.argv[1] + " sampling on " + sys.argv[2] + "nodes.")
+    #node_num = int(sys.argv[1])
+    if len(sys.argv) == 2:
+        sampling_rate = int(sys.argv[2])
+    else:
+        sampling_rate = 3 # Default sampling rate is 3
+    print ("running on " + sys.argv[1] + "nodes with " + sys.argv[2] + " sampling.")
     t0 = time.time()
 
     #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
@@ -89,7 +92,9 @@ if __name__ =='__main__':
             .appName("MODIS_agg")\
             .getOrCreate()
     sc = spark.sparkContext
-    global_cloud_pix, global_total_pix = sc.parallelize(list(file_pairs), file_num).map(lambda x: aggregateOneFileData(x[0],x[1], sampling_rate)).reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
+    global_cloud_pix, global_total_pix = sc.parallelize(list(file_pairs), file_num)\
+                                           .map(lambda x: aggregateOneFileData(x[0], x[1], sampling_rate))\
+                                           .reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]))
     spark.stop() # Stop Spark
     lat_bnd = np.arange(-90,90,1)
     lon_bnd = np.arange(-180,180,1)

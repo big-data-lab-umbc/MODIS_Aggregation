@@ -13,7 +13,7 @@ export PYSPARK_DRIVER_PYTHON=$CONDA_PREFIX/bin/python
 
 SPARK=/umbc/xfs1/cybertrn/common/Softwares/spark/spark-2.4.0-bin-hadoop2.7
 MY_SPARK=/home/jianwu/jianwu_common/pei_spark/my-spark-jianwu
-SPARK_PYTHON_FILE="/home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/spark/monthly-aggregation-file-level-spark-sampling.py $sampling $SLURM_NNODES"
+SPARK_PYTHON_FILE="/home/jianwu/jianwu_common/MODIS_Aggregation/jianwu-code/github/MODIS_Aggregation/benchmarking/spark/monthly-aggregation-file-level-spark-sampling.py $SLURM_NNODES $sampling"
 
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
