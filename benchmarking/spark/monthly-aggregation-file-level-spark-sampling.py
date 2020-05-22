@@ -55,7 +55,7 @@ def aggregateOneFileData(M06_file, M03_file, sampling_rate):
 
 def save_output(cf, node_num, sampling_rate):
     cf1 = xr.DataArray(cf)
-    output_file_name = "monthlyCloudFraction-file-level-" + node_num + "-nodes-" + sampling_rate + "-sampling"
+    output_file_name = "monthlyCloudFraction-file-level-" + node_num + "-nodes-" + str(sampling_rate) + "-sampling"
     cf1.to_netcdf(output_file_name + ".nc")
     plt.figure(figsize=(14, 7))
     plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
@@ -68,11 +68,11 @@ def save_output(cf, node_num, sampling_rate):
 if __name__ =='__main__':
 
     #node_num = int(sys.argv[1])
-    if len(sys.argv) == 2:
+    if len(sys.argv) == 3:
         sampling_rate = int(sys.argv[2])
     else:
         sampling_rate = 3 # Default sampling rate is 3
-    print ("running on " + sys.argv[1] + "nodes with " + sys.argv[2] + " sampling.")
+    print ("running on " + sys.argv[1] + "nodes with " + str(sampling_rate) + " sampling.")
     t0 = time.time()
 
     #M06_dir = "/umbc/xfs1/jianwu/common/MODIS_Aggregation/MODIS_one_day_data/"
@@ -109,4 +109,4 @@ if __name__ =='__main__':
     print("total execution time (Seconds):" + str(total))    
     
     #total_cloud_fraction = (global_cloud_pix/global_total_pix).reshape([lat_bnd,lon_bnd])
-    save_output(total_cloud_fraction, sys.argv[1], sys.argv[2])
+    save_output(total_cloud_fraction, sys.argv[1], str(sampling_rate))
