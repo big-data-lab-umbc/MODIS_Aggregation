@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=mpi_Job-file-level
 #SBATCH --partition=high_mem
-##SBATCH --nodes=5
+#SBATCH --nodes=5
 #SBATCH --ntasks-per-node=16
 #SBATCH --exclusive
 #SBATCH --qos=normal+

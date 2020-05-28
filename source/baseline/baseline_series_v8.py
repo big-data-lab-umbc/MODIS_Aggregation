@@ -24,7 +24,6 @@ V7 Updates: Change the sampling rate starts from 3 and 4 count from 1 (Here we c
 			Add the flexible input of data path, date and time period for averaging
 
 V8 Updates: Change histogram count from averaged value to be all pixel values 
-			Add Fillvalue and scale_factor to the output data.
 			Added scale_factor, add_offset and _Fillvalue as attributes to each variabes.
 			Found the problem in reading temperature and fixed it by changing the reading way:
 				For netCDF4, the variable is done by (rdval * scale) + offst
@@ -62,6 +61,7 @@ def readEntry(key,ncf):
 	#It needs to be reverted from the netCDF4 reading first, then convert it in the way of HDF file.
 
 	# Read the attributes of the variable
+	unit = ncf.variables[key].units
 	scale= ncf.variables[key].scale_factor
 	offst= ncf.variables[key].add_offset
 	lonam= ncf.variables[key].long_name
@@ -72,7 +72,7 @@ def readEntry(key,ncf):
 	#Sampling the variable
 	rdval = rdval[2::spl_num,3::spl_num]
 
-	return rdval,lonam,fillvalue,scale,offst
+	return rdval,lonam,unit,fillvalue,scale,offst
 
 def read_MODIS(varnames,fname1,fname2): 
 	# Store the data from variables after reading MODIS files
@@ -91,17 +91,14 @@ def read_MODIS(varnames,fname1,fname2):
 	data['CM'] = data['CM'].astype(np.float)
 
 	# Read the User-defined variables from MYD06 product
-	tmp_idx = 0
 	for key in varnames:
 		if key == 'cloud_fraction': 
-			name_idx = tmp_idx
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			data[key],lonam,fill,scale,offst = readEntry(key,ncfile)
+			data[key],lonam,unit,fill,scale,offst = readEntry(key,ncfile)
 			data[key] = (data[key] - offst) / scale 
 			data[key] = (data[key] - offst) * scale 
-			tmp_idx += 1
-
+			
 	ncfile.close()
 
 	# Read the common variables (Latitude & Longitude) from MYD03 product
@@ -198,7 +195,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in hdfs:#range(2):#hdfs:
+	for j in hdfs:#range(1):#hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 	
 		# Read Level-2 MODIS data
@@ -210,7 +207,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 		lat = lat[res_idx]
 		lon = lon[res_idx]
 		CM  = CM [res_idx]
-
+		
 		# Ravel the 2-D data to 1-D array
 		lat = lat.ravel()
 		lon = lon.ravel()
@@ -226,13 +223,16 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 			key_idx += 1
 			
 		# Locate the lat lon index into 3-Level frid box
-		idx_lon = ((lon-NTA_lons[0])/gap_x).astype(int)
-		idx_lat = ((lat-NTA_lats[0])/gap_y).astype(int)
+		idx_lon = np.round((lon-NTA_lons[0])/gap_x).astype(int)
+		idx_lat = np.round((lat-NTA_lats[0])/gap_y).astype(int)
 
 		latlon_index=(idx_lat*grid_lon)+idx_lon
 
 		latlon_index_unique = np.unique(latlon_index)
 
+		#print(lon[0],idx_lon[0],lat[0],idx_lat[0])
+		#print(latlon_index_unique.max(),grid_lat*grid_lon)
+		
 		for i in np.arange(latlon_index_unique.size):
 		#-----loop through all the grid boxes ocupied by this granule------#
 			z=latlon_index_unique[i]
@@ -241,6 +241,11 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 				# For cloud fraction
 				TOT_pix = np.sum(CM[np.where(latlon_index == z)]>=0).astype(float)
 				CLD_pix = np.sum(CM[np.where(latlon_index == z)]<=1).astype(float)
+
+				#local_data = CM[np.where(latlon_index == z)]
+				#if local_data[np.where(np.isnan(local_data) == 0)].size == 0: 
+				#	print('All NaN is Ture.')
+
 				Fraction = CLD_pix / TOT_pix
 
 				if len(intervals_2d) != 1:	
@@ -261,11 +266,18 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 						key_idx += 1
 						continue 
 					pixel_data = data[key]
+
 					tot_val = np.nansum(pixel_data[np.where(latlon_index == z)]).astype(float)
 					#ave_val = tot_val / TOT_pix
 					all_val = np.array(pixel_data[np.where(latlon_index == z)]).astype(float)
 					max_val = np.nanmax(pixel_data[np.where(latlon_index == z)]).astype(float)
 					min_val = np.nanmin(pixel_data[np.where(latlon_index == z)]).astype(float)
+
+					#local_data = pixel_data[np.where(latlon_index == z)]
+					#print(local_data.size,z)
+					#print(z,tot_val,max_val,min_val,CLD_pix,TOT_pix)
+					#if local_data[np.where(np.isnan(local_data) == 0)].size == 0: 
+					#	print('All NaN is Ture.',key,tot_val,max_val,min_val,CLD_pix,TOT_pix)
 					
 					if len(intervals_2d) != 1:
 						pixel_data_2d = data[varnames[var_idx[key_idx]]]
@@ -275,7 +287,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 
 					# Calculate Statistics pamameters
 					grid_data = cal_stats(z,key,grid_data, \
-										  min_val,max_val,tot_val,TOT_pix,all_val,all_val_2d, \
+										  min_val,max_val,tot_val,CLD_pix,all_val,all_val_2d, \
 										  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx)
 
 					key_idx += 1
@@ -294,20 +306,25 @@ def addGridEntry(f,name,units,long_name,fillvalue,scale_factor,add_offset,data):
 	For MODIS HDF4 file, the variable should be done by (rdval-offst)*scale 
 	It needs to be reverted from the netCDF4 reading first, then convert it in the way of HDF file.
 	'''
-
 	if (('Histogram_Counts' in name) == True) | (('Jhisto_vs_' in name) == True) | (('Pixel_Counts' in name) == True):
 		original_data = data.astype(np.int)
+	elif (('Maximum' in name) == True) | (('Minimum' in name) == True):
+		tmp_data = data/scale_factor + add_offset
+		tmp_data[np.where(np.isinf(tmp_data) == 1)]=fillvalue
+		original_data = tmp_data.astype(np.int)
 	else: 
-		original_data = (data/scale_factor + add_offset).astype(np.int)
+		tmp_data = data/scale_factor + add_offset
+		tmp_data[np.where(np.isnan(tmp_data) == 1)]=fillvalue
+		original_data = tmp_data.astype(np.int)
 
 	PCentry=f.create_dataset(name,data=original_data)
 	PCentry.dims[0].label='lat_bnd'
 	PCentry.dims[1].label='lon_bnd'
-	PCentry.attrs['units']=units
-	PCentry.attrs["long_name"] =np.str(long_name)
-	PCentry.attrs['_FillValue']=fillvalue
-	PCentry.attrs['scale_factor']=scale_factor
-	PCentry.attrs['add_offset']=add_offset
+	PCentry.attrs['units']       = np.str(units)
+	PCentry.attrs["long_name"]   = np.str(long_name)
+	PCentry.attrs['_FillValue']  = fillvalue
+	PCentry.attrs['scale_factor']= scale_factor
+	PCentry.attrs['add_offset']  = add_offset
 
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
@@ -450,6 +467,7 @@ if __name__ =='__main__':
 	print(len(fname1))
 
 	#--------------STEP 5: Read Attributes of each variables----------------------------------
+	unit_list = []
 	scale_list = []
 	offst_list = []
 	longname_list = []
@@ -464,7 +482,8 @@ if __name__ =='__main__':
 			name_idx = tmp_idx
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			tmp_data,lonam,fill,scale,offst = readEntry(key,ncfile)
+			tmp_data,lonam,unit,fill,scale,offst = readEntry(key,ncfile)
+			unit_list  = np.append(unit_list,unit)
 			scale_list = np.append(scale_list,scale)
 			offst_list = np.append(offst_list,offst)
 			longname_list = np.append(longname_list, lonam)
@@ -472,10 +491,12 @@ if __name__ =='__main__':
 			tmp_idx += 1
 
 	# Add the long name of cloud freaction at the first row
+	CM_unit     = 'none'
 	CM_longname = 'Cloud Fraction from Cloud Mask (cloudy & prob cloudy)'
 	CM_fillvalue = -9999
 	CM_scale_factor = 0.0001
 	CM_add_offset   = 0.0
+	unit_list      = np.insert(unit_list,      name_idx, CM_unit)
 	scale_list     = np.insert(scale_list,     name_idx, CM_scale_factor)
 	offst_list     = np.insert(offst_list,     name_idx, CM_add_offset)
 	longname_list  = np.insert(longname_list,  name_idx, CM_longname)
@@ -533,8 +554,9 @@ if __name__ =='__main__':
 	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
 	
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
-	l3name='MYD08_M3'+'A{:04d}{:02d}'.format(year,month)
-	ff=h5py.File(l3name+'_baseline_monthly_v8.h5','w')
+	l3name  = 'MYD08_D3'+'A{:04d}{:02d}'.format(year,month)
+	subname = '_baseline_daily_v9_5.h5'
+	ff=h5py.File(l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
@@ -556,11 +578,11 @@ if __name__ =='__main__':
 			if (sts_name[sts_idx[i]] in key) == True:  
 				#print(sts_name[sts_idx[i]],key,grid_data[key].shape)
 				#print(longname_list[cnt][:20],new_name)
-				addGridEntry(ff,new_name,'none',longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key])
+				addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key])
 				cnt += 1
 	
 	ff.close()
 
-	print(l3name+'_baseline_monthly_v8.h5 Saved!')
+	print(l3name+subname+' Saved!')
 	#---------------------------COMPLETED------------------------------------------------------
 
