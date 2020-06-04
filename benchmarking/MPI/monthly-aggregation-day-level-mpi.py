@@ -185,7 +185,7 @@ if __name__ =='__main__':
 		# Create HDF5 file to store the result 
 		save_output(Mean_Fraction)
 		
-		comm.Abort()
+		#comm.Abort()
 
 	else: 
 		print("Process {} finished".format(rank))
