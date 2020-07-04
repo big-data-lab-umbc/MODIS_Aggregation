@@ -48,6 +48,7 @@ def aggregateOneFileData(M06_file, M03_file):
     # we can use this approach because the internal structure (677, 452) is the same for both MYD03 and MYD06.
     cloud_lon = [lon[i] for i in index[0]]
     cloud_lat = [lat[i] for i in index[0]]
+
     # increment cloud_pix by 1 for the grid for each value in (cloud_lat, cloud_lon).
     for x, y in zip(cloud_lat, cloud_lon):
         cloud_pix[x, y] += 1
@@ -59,7 +60,6 @@ def displayOutput(cf):
     # write output into an nc file
     cf.to_netcdf("monthlyCloudFraction-file-level-for-loop.nc")
     print("Created netcdf file monthlyCloudFraction-file-level-for-loop.nc")
-
     # write output into a figure
     plt.figure(figsize=(14, 7))
     plt.contourf(range(-180, 180), range(-90, 90), cf, 100, cmap="jet")
@@ -76,9 +76,13 @@ def calculateCloudFraction(M03_files, M06_files):
     total_pix_global = np.zeros((180, 360))
 
     for M06_file, M03_file in zip(M06_files, M03_files):
-        one_day_result = aggregateOneFileData(M06_file, M03_file)
-        cloud_pix_global += one_day_result[0]
-        total_pix_global += one_day_result[1]
+        try:
+            one_day_result = aggregateOneFileData(M06_file, M03_file)
+            cloud_pix_global += one_day_result[0]
+            total_pix_global += one_day_result[1]
+        except:
+            print("Error in M06_file: " + M06_file)
+            print("Error in M03_file: " + M03_file)
 
     # calculate final cloud fraction using global 2D result
     total_pix_global[np.where(total_pix_global == 0)] = 1.0
@@ -88,8 +92,10 @@ def calculateCloudFraction(M03_files, M06_files):
 
 
 def getInputDirectories():
-    M03_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD03/"
-    M06_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD06/"
+    # M03_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD03/"
+    # M06_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD06/"
+    M03_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD03/"
+    M06_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD06_L2/"
     return M03_dir, M06_dir
 
 
