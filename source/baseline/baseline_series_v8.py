@@ -389,6 +389,10 @@ if __name__ =='__main__':
 	MYD03_dir    = data_path_file[1,0] #'/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/'
 	MYD03_prefix = data_path_file[1,1] #'MYD03.A'
 	fileformat = 'hdf'
+
+	output_path_file = np.array(pd.read_csv(sys.argv[1], header=3, delim_whitespace=True))
+	output_dir = output_path_file[0,0]
+	output_prefix = output_path_file[0,1]
 	
 	#-------------STEP 2: Set up spactial and temporal resolution & variable names----------
 	NTA_lats = [poly[0],poly[1]] #[  0,40] #[-90,90]   #[-30,30]    
@@ -554,9 +558,9 @@ if __name__ =='__main__':
 	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
 	
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
-	l3name  = 'MYD08_D3'+'A{:04d}{:02d}'.format(year,month)
-	subname = '_baseline_daily_v9_5.h5'
-	ff=h5py.File(l3name+subname,'w')
+	l3name  = output_prefix + '.A{:04d}{:02d}'.format(year,month)
+	subname = '_baseline_monthly_v8.h5'
+	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
 	PC.attrs['units']='degrees'
