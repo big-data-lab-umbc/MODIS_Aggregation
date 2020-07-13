@@ -394,7 +394,6 @@ if __name__ =='__main__':
 	output_dir = output_path_file[0,0]
 	output_prefix = output_path_file[0,1]
 	
-	
 	#-------------STEP 2: Set up spactial and temporal resolution & variable names----------
 	NTA_lats = [poly[0],poly[1]] #[  0,40] #[-90,90]   #[-30,30]    
 	NTA_lons = [poly[2],poly[3]] #[-40,60] #[-180,180] #[-60,60]  
