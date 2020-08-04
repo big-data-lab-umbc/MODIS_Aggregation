@@ -13,8 +13,8 @@ dependencies:
   - dask
   - distributed
   - gcsfs
-  - intake::intake
-  - intake::intake-xarray
+  - intake
+  - intake-xarray
   - s3fs
   - scikit-image
   - scikit-learn
