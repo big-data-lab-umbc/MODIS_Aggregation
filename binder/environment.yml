@@ -38,6 +38,7 @@ dependencies:
   - ipywidgets
   - ipyleaflet
   - dask-kubernetes
+  - pangeo-notebook
   - pip:
     - graphviz
     - git+https://github.com/xgcm/xgcm.git
