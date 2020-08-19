@@ -1,21 +1,19 @@
-# MODIS-Aggregation
-[![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/big-data-lab-umbc/MODIS-Aggregation/master)
+=======
+Authors
+=======
 
-#Master Branch Build Status
-[![Build Status](https://travis-ci.org/sdeshpa1/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/sdeshpa1/MODIS_Aggregation)
-### Installation
-#### Conda environment setup
-```
-conda create -n MODIS_Aggregation -c conda-forge python=3.7 libnetcdf netCDF4 netCDF4 dask distributed xarray h5py
+Development Lead
+----------------
 
->> git clone https://github.com/sdeshpa1/MODIS_Aggregation.git
->> cd MODIS
->> python setup.py install
-```
+* Lakshmi Priyanka
 
-The code is tested with Python 3.7
+Contributors
+------------
 
-# Team members
+None yet. Why not be the first?
+
+Team members
+--------------
 - PI: [Dr. Jianwu Wang](https://userpages.umbc.edu/~jianwu/), Department of Information Systems, UMBC
 - Co-I: [Dr. Zhibo Zhang](https://physics.umbc.edu/people/faculty/zhang/), Department of Physics, UMBC
 - Co-I: Steven Platnick, NASA Goddard Space Flight Center
@@ -30,5 +28,7 @@ The code is tested with Python 3.7
 - MS student: Deepak Prakash, Department of Information Systems, UMBC
 - MS student: Lakshmi Priyanka Kandoor, Department of Information Systems, UMBC
 
-# Acknowledgement
+Acknowledgement
+------------------
 The project is mainly funded by NASA CMAC program
+

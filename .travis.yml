@@ -38,10 +38,10 @@ before_install:
 ## Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
     - pip install -r requirements_dev.txt
-    - pip install -U tox-travis
+    - pip install pytest
 #
 # Command to run tests, e.g. python setup.py test
-script: pytest
+script: pytest tests/test_addition.py
 
 # Assuming you have installed the travis-ci CLI tool, after you
 # create the Github repo and add it to Travis, run the
