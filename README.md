@@ -3,6 +3,10 @@
 
 #Master Branch Build Status
 [![Build Status](https://travis-ci.org/sdeshpa1/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/sdeshpa1/MODIS_Aggregation)
+
+#Documentation
+Read the documentation online at: http://modis-aggregation.rtfd.io
+
 ### Installation
 #### Conda environment setup
 ```
