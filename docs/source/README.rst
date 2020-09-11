@@ -18,7 +18,7 @@ Environment Setup
 
 Source Code
 -------------
-https://github.com/sdeshpa1/MODIS_Aggregation
+https://github.com/big-data-lab-umbc/MODIS_Aggregation
 
 The code is tested with Python 3.7
 
