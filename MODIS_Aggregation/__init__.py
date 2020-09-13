@@ -6,7 +6,7 @@ __version__ = '0.1.0'
 
 
 from .cfa import *
-from .baseline_series import *
+# from .baseline_series import *
 from .checkaddition import *
 
 
