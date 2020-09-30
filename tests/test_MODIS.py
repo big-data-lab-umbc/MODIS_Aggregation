@@ -3,7 +3,6 @@ from MODIS_Aggregation import getInputDirectories
 from MODIS_Aggregation import aggregateOneFileData
 from MODIS_Aggregation import displayOutput
 
-
 class getFilePathTest(unittest.TestCase):
 
     def test_valid_file_path(self):
