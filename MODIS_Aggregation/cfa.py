@@ -94,7 +94,9 @@ def calculateCloudFraction(M03_files, M06_files):
 def getInputDirectories():
     # M03_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD03/"
     # M06_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD06/"
-    M03_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD03/"
-    M06_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD06_L2/"
+    # M03_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD03/"
+    # M06_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD06_L2/"
+    M03_dir = "C:/Users/pwalk/OneDrive/Desktop/Sukhada/College/Volenteer/MODIS_Aggregation/resources/data/MYD03/"
+    M06_dir = "C:/Users/pwalk/OneDrive/Desktop/Sukhada/College/Volenteer/MODIS_Aggregation/resources/data/MYD06_L2/"
     return M03_dir, M06_dir
 
