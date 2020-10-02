@@ -1,9 +1,6 @@
-import time
-import glob
-import xarray as xr
-from MODIS_Aggregation import *
+from MODIS_Aggregation.cfa import *
 
-if __name__ == '__main__':
+def cfa_check():
     M03_dir, M06_dir = getInputDirectories()
     print(M06_dir)
     print(M03_dir)
@@ -18,4 +15,4 @@ if __name__ == '__main__':
     print("total execution time (Seconds):" + str(total))
     # display the output
     displayOutput(xr.DataArray(cf))
-    print(xr.open_dataset("../examples/monthlyCloudFraction-file-level-for-loop.nc")['__xarray_dataarray_variable__'][137, 201].values)
+    return(xr.open_dataset("../MODIS_Aggregation/monthlyCloudFraction-file-level-for-loop.nc")['__xarray_dataarray_variable__'][137, 201].values)
