@@ -97,7 +97,7 @@ def getInputDirectories():
     M03_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD03/"
     M06_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD06_L2/"
 
-    # M03_dir = "../MODIS_Aggregation/resources/data/sample_input_data/MYD03/"
-    # M06_dir = "../MODIS_Aggregation/resources/data/sample_input_data/MYD06_L2/"
+    M03_dir = "C:/Users/pwalk/OneDrive/Desktop/sample_input_data/MYD03/"
+    M06_dir = "C:/Users/pwalk/OneDrive/Desktop/sample_input_data/MYD06_L2/"
     return M03_dir, M06_dir
 
