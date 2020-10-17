@@ -18,3 +18,4 @@ if __name__ == '__main__':
     print("total execution time (Seconds):" + str(total))
     # display the output
     displayOutput(xr.DataArray(cf))
+    print(xr.open_dataset("../examples/monthlyCloudFraction-file-level-for-loop.nc")['__xarray_dataarray_variable__'][127, 196].values)

@@ -1,7 +1,8 @@
 MODIS-Aggregation
 ==================
+
 .. image:: https://readthedocs.org/projects/modis-aggregation/badge/?version=latest
-:target: https://modis-aggregation.readthedocs.io/en/latest/?badge=latest
+  :target: https://modis-aggregation.readthedocs.io/en/latest/?badge=latest
 :alt: Documentation Status
 
 .. contents::
@@ -9,12 +10,6 @@ MODIS-Aggregation
 Documentation
 --------------
 Read the documentation online at: http://modis-aggregation.rtfd.io
-
-Environment Setup
-------------------
-# MODIS-Aggregation
-
-[![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/big-data-lab-umbc/MODIS-Aggregation/master)
 
 Source Code
 -------------
