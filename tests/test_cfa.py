@@ -1,5 +1,8 @@
 import unittest
 from MODIS_Aggregation import *
+import glob
+import time
+import xarray as xr
 
 
 class GetOutput(unittest.TestCase):
