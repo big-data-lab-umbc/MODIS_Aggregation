@@ -3,6 +3,7 @@ from MODIS_Aggregation import *
 import glob
 import time
 import xarray as xr
+import netCDF4
 
 
 class GetOutput(unittest.TestCase):
