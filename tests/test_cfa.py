@@ -9,9 +9,7 @@ class GetOutput(unittest.TestCase):
 
 
     def test_check_value(self):
-
-        M03_dir = '../resources/data/sample_input_data/MYD03/'
-        M06_dir = '../resources/data/sample_input_data/MYD06_L2/'
+        M03_dir, M06_dir = getInputDirectories()
         print(M06_dir)
         print(M03_dir)
         M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
@@ -26,7 +24,7 @@ class GetOutput(unittest.TestCase):
                 # display the output
         displayOutput(xr.DataArray(cf))
         result = (xr.open_dataset("../tests/monthlyCloudFraction-file-level-for-loop.nc")[
-                           '__xarray_dataarray_variable__'][137, 201].values)
+                           '__xarray_dataarray_variable__'][127, 196].values)
 
         expected = 0.0
         self.assertEqual(expected, result, msg=None)
