@@ -29,12 +29,6 @@ before_install:
     # package name for test invocation
     - PACKAGENAME="MODIS_Aggregation"
 
-#install:
-#    - pip install mpich
-#    - pip install mpi4py
-#    - pip install -r requirements_dev.txt
-
-
 ## Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
     - pip install -r requirements_dev.txt
@@ -42,6 +36,13 @@ install:
 #
 # Command to run tests, e.g. python setup.py test
 script: pytest tests/
+
+
+#install:
+#    - pip install mpich
+#    - pip install mpi4py
+#    - pip install -r requirements_dev.txt
+
 
 # Assuming you have installed the travis-ci CLI tool, after you
 # create the Github repo and add it to Travis, run the

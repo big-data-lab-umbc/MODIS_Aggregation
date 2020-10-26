@@ -80,9 +80,11 @@ def calculateCloudFraction(M03_files, M06_files):
             one_day_result = aggregateOneFileData(M06_file, M03_file)
             cloud_pix_global += one_day_result[0]
             total_pix_global += one_day_result[1]
-        except:
-            print("Error in M06_file: " + M06_file)
-            print("Error in M03_file: " + M03_file)
+        except Exception as e:
+            print(e)
+        #except:
+            # print("Error in M06_file: " + M06_file)
+            # print("Error in M03_file: " + M03_file)
 
     # calculate final cloud fraction using global 2D result
     total_pix_global[np.where(total_pix_global == 0)] = 1.0
@@ -94,12 +96,14 @@ def calculateCloudFraction(M03_files, M06_files):
 def getInputDirectories():
     # M03_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD03/"
     # M06_dir = "/Users/lakshmipriyanka/Project/MODIS_Aggregation/resources/data/input_data_sample/MYD06/"
-    M03_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD03/"
-    M06_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD06_L2/"
+    # M03_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD03/"
+    # M06_dir = "/home/supriya/IS_Thesis/stratus_endpoint/stratus/stratus/handlers/endpoint/samples/MODIS/data/MYD06_L2/"
+    M03_dir = "C:/Users/pwalk/OneDrive/Desktop/Sukhada/College/Volenteer/MODIS_Aggregation/resources/data/sample_input_data/MYD03"
+    M06_dir = "C:/Users/pwalk/OneDrive/Desktop/Sukhada/College/Volenteer/MODIS_Aggregation/resources/data/sample_input_data/MYD06_L2"
     return M03_dir, M06_dir
 
 
-if __name__ == '__main__':
+    if __name__ == '__main__':
     M03_dir, M06_dir = getInputDirectories()
     M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
     M06_files = sorted(glob.glob(M06_dir + "MYD06_L2.A2008*"))

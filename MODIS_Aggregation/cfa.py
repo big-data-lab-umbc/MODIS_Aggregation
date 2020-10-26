@@ -80,9 +80,11 @@ def calculateCloudFraction(M03_files, M06_files):
             one_day_result = aggregateOneFileData(M06_file, M03_file)
             cloud_pix_global += one_day_result[0]
             total_pix_global += one_day_result[1]
-        except:
-            print("Error in M06_file: " + M06_file)
-            print("Error in M03_file: " + M03_file)
+        except Exception as e:
+            print(e)
+        # except:
+        #     print("Error in M06_file: " + M06_file)
+        #     print("Error in M03_file: " + M03_file)
 
     # calculate final cloud fraction using global 2D result
     total_pix_global[np.where(total_pix_global == 0)] = 1.0
