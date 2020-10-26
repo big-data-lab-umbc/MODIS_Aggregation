@@ -30,6 +30,7 @@ import sys
 import h5py
 import timeit
 import random
+import calendar
 import numpy as np
 import pandas as pd 
 from mpi4py import MPI
@@ -536,16 +537,21 @@ if __name__ =='__main__':
 		
 		daynew = dt.toordinal()
 		yearstart = datetime(year,1,1)
-		day_yearstart = yearstart.toordinal()
-		day_in_year = np.array([(daynew-day_yearstart)+1])
+		yearend   = calendar.monthrange(year, 12)[1]
 
+		day_yearstart = yearstart.toordinal()
+		day_yearend = datetime(year,12,yearend).toordinal()
+
+		day_in_year = np.array([(daynew-day_yearstart)+1])
+		end_in_year = np.array([(day_yearend-day_yearstart)+1])
+		
 		# Adjust to 3 hours previous/after the End Date for the orbit gap/overlap problem
 		if (dt.year == until.year) & (dt.month == until.month) & (dt.day == until.day):
 			shift_hour = 3
 			time    = np.append(np.arange(24),np.arange(shift_hour))
-			year    = [year,year]
-			day_in_year = [day_in_year,day_in_year + 1]
-			if day_in_year[1] <= 0:
+			year    = [year[0],year[0]]
+			day_in_year = [day_in_year[0],day_in_year[0] + 1]
+			if day_in_year[1] > end_in_year:
 				year[1]   -= 1 
 				yearstart = datetime(year[1],1,1)
 				yearend   = datetime(year[1],12,31)
@@ -657,6 +663,7 @@ if __name__ =='__main__':
 	
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
+	
 	subname = 'serial_output_monthly.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
