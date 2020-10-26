@@ -231,8 +231,8 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 		
 		# Retrieve the day and hour from the file name
-		file_day  = np.int(fname1[j].split('.')[2][5:])
-		file_hour = np.int(fname1[j].split('.')[3][:2])
+		file_day  = np.int(fname1[j].split('.')[1][5:])
+		file_hour = np.int(fname1[j].split('.')[2][:2])
 		
 		# Read Level-2 MODIS data
 		lat,lon,data = read_MODIS(varnames,fname1[j],fname2[j],spl_num)
@@ -657,7 +657,7 @@ if __name__ =='__main__':
 	
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
-	subname = 'serial_output.h5'
+	subname = 'serial_output_monthly.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)

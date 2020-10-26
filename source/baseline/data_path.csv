@@ -1,6 +1,6 @@
-Data_input_path                                                          File_prefix_name
-/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD06_L2/   MYD06_L2.A
-/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/MYD03/      MYD03.A
+Data_input_path                                                                      File_prefix_name
+/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/version_61/MYD06_L2/    MYD06_L2.A
+/umbc/xfs1/cybertrn/common/Data/Satellite_Observations/MODIS/version_61/MYD03/       MYD03.A
 
-Data_output_path                                                         File_prefix_name
-/home/xinh1/jianwu_common/MODIS_Aggregation/xin-code/MODIS_Aggregation/source/baseline/result/                          MYD08_M3
+Data_output_path                                                                     File_prefix_name
+/umbc/xfs1/zzbatmos/users/jzheng3/CMAC_project/test_result/                          MYD08_L3
