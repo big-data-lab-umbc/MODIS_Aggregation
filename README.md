@@ -2,7 +2,7 @@
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/big-data-lab-umbc/MODIS-Aggregation/master)
 
 #Master Branch Build Status
-[![Build Status](https://travis-ci.org/sdeshpa1/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/sdeshpa1/MODIS_Aggregation)
+[![Build Status](https://travis-ci.org/big-data-lab-umbc/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/sdeshpa1/MODIS_Aggregation)
 
 #Documentation
 Read the documentation online at: http://modis-aggregation.rtfd.io
