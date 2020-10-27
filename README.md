@@ -1,8 +1,8 @@
 # MODIS-Aggregation
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/big-data-lab-umbc/MODIS-Aggregation/master)
 
-#Master Branch Build Status
-[![Build Status](https://travis-ci.org/big-data-lab-umbc/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/sdeshpa1/MODIS_Aggregation)
+# Master Branch Build Status
+[![Build Status](https://travis-ci.org/big-data-lab-umbc/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/big-data-lab-umbc/MODIS_Aggregation)
 
 #Documentation
 Read the documentation online at: http://modis-aggregation.rtfd.io
@@ -12,7 +12,7 @@ Read the documentation online at: http://modis-aggregation.rtfd.io
 ```
 conda create -n MODIS_Aggregation -c conda-forge python=3.7 libnetcdf netCDF4 netCDF4 dask distributed xarray h5py
 
->> git clone https://github.com/sdeshpa1/MODIS_Aggregation.git
+>> git clone https://github.com/big-data-lab-umbc/MODIS_Aggregation.git
 >> cd MODIS
 >> python setup.py install
 ```
