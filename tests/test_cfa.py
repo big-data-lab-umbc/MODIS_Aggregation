@@ -28,11 +28,13 @@ class GetOutput(unittest.TestCase):
                 # display the output
         result = cf[127, 196]
         print("result:", result)
-
         expected = 0.12883436
         self.assertAlmostEqual(expected, result, places=8, msg=None)
-        print(result)
 
+        result2 = xr.open_dataset("monthlyCloudFraction-file-level-for-loop.nc")[
+                           '__xarray_dataarray_variable__'][127, 196].values
+        print("result2:", result2)
+        self.assertAlmostEqual(expected, result2, places=8, msg=None)
 
 if __name__ == '__main__':
     unittest.main()
