@@ -3,6 +3,8 @@ import xarray as xr
 import glob
 import matplotlib.pyplot as plt
 import time
+import netCDF4
+import traceback
 
 
 def aggregateOneFileData(M06_file, M03_file):
@@ -82,6 +84,7 @@ def calculateCloudFraction(M03_files, M06_files):
             total_pix_global += one_day_result[1]
         except Exception as e:
             print(e)
+            traceback.print_exc()
         # except:
         #     print("Error in M06_file: " + M06_file)
         #     print("Error in M03_file: " + M03_file)
