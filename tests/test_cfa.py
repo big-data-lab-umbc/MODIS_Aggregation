@@ -10,8 +10,8 @@ class GetOutput(unittest.TestCase):
 
 
     def test_check_value(self):
-        M03_dir = "../resources/data/sample_input_data/MYD03/"
-        M06_dir = "../resources/data/sample_input_data/MYD06_L2/"
+        M03_dir = "resources/data/sample_input_data/MYD03/"
+        M06_dir = "resources/data/sample_input_data/MYD06_L2/"
         print(M06_dir)
         print(M03_dir)
         M03_files = sorted(glob.glob(M03_dir + "MYD03.A2008*"))
@@ -31,6 +31,7 @@ class GetOutput(unittest.TestCase):
         expected = 0.12883436
         self.assertAlmostEqual(expected, result, places=8, msg=None)
 
+        displayOutput(xr.DataArray(cf))
         result2 = xr.open_dataset("monthlyCloudFraction-file-level-for-loop.nc")[
                            '__xarray_dataarray_variable__'][127, 196].values
         print("result2:", result2)
