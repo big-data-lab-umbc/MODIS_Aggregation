@@ -4,7 +4,7 @@
 # Master Branch Build Status
 [![Build Status](https://travis-ci.org/big-data-lab-umbc/MODIS_Aggregation.svg?branch=master)](https://travis-ci.org/big-data-lab-umbc/MODIS_Aggregation)
 
-#Documentation
+# Documentation
 Read the documentation online at: http://modis-aggregation.rtfd.io
 
 ### Installation
