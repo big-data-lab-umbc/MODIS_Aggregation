@@ -26,12 +26,11 @@ class GetOutput(unittest.TestCase):
         total = t1 - t0
         print("total execution time (Seconds):" + str(total))
                 # display the output
-        displayOutput(xr.DataArray(cf))
-        result = (xr.open_dataset("../tests/monthlyCloudFraction-file-level-for-loop.nc")[
-                           '__xarray_dataarray_variable__'][127, 196].values)
+        result = cf[127, 196]
+        print("result:", result)
 
-        expected = 0.0
-        self.assertEqual(expected, result, msg=None)
+        expected = 0.12883436
+        self.assertAlmostEqual(expected, result, places=8, msg=None)
         print(result)
 
 
