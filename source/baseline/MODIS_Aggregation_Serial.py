@@ -228,7 +228,7 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in hdfs:#range(1):#hdfs:
+	for j in hdfs: #range(2):#hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 		
 		# Retrieve the day and hour from the file name
@@ -399,10 +399,10 @@ def addGridEntry(f,name,units,long_name,fillvalue,scale_factor,add_offset,data,h
 	PCentry.attrs['add_offset']  = add_offset
 
 	if ('Histogram_Counts' in name) == True: 
-		PCentry.attrs['Histogram_Bin_Boundaries']  = hist_bin[name]
+		PCentry.attrs['Histogram_Bin_Boundaries']  = hist_bin
 	elif ('Jhisto_vs_' in name) == True: 
-		PCentry.attrs['Histogram_Bin_Boundaries']  = hist_bin[name]
-		PCentry.attrs['Joint_Parameter_Histogram_Bin_Boundaries']  = join_hist_bin[name]
+		PCentry.attrs['Histogram_Bin_Boundaries']  = hist_bin
+		PCentry.attrs['Joint_Parameter_Histogram_Bin_Boundaries']  = join_hist_bin
 
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
@@ -664,7 +664,7 @@ if __name__ =='__main__':
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
 	
-	subname = 'serial_output_monthly.h5'
+	subname = 'serial_output_twoday.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
@@ -687,7 +687,8 @@ if __name__ =='__main__':
 			if (sts_name[sts_idx[i]] in key) == True:  
 				#print(sts_name[sts_idx[i]],key,grid_data[key].shape)
 				#print(longname_list[cnt][:20],new_name)
-				addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],bin_num1,bin_num2)
+				#print(cnt,intervals_1d[cnt],intervals_2d[cnt])
+				addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
 				cnt += 1
 	
 	ff.close()
