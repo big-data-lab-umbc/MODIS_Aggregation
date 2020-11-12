@@ -3,6 +3,8 @@ import xarray as xr
 import glob
 import matplotlib.pyplot as plt
 import time
+from netCDF4 import Dataset
+import traceback
 
 
 def aggregateOneFileData(M06_file, M03_file):
@@ -25,13 +27,16 @@ def aggregateOneFileData(M06_file, M03_file):
     total_pix = np.zeros((180, 360))
     cloud_pix = np.zeros((180, 360))
     # read 'Cloud_Mask_1km' variable from the MYD06_L2 file, whose shape is (2030, 1354)
-    d06 = xr.open_dataset(M06_file, drop_variables="Scan Type")['Cloud_Mask_1km'][:, :, 0].values
+    # d06 = xr.open_dataset(M06_file, drop_variables="Scan Type")['Cloud_Mask_1km'][:, :, 0].values
+    d06 = Dataset(M06_file, "r").variables['Cloud_Mask_1km'][:, :, 0]
     # sampling data with 1/3 ratio (pick 1st, 4th, 7th, ...) in both latitude and longitude direction. d06CM's shape is (677, 452)
     d06CM = d06[::3, ::3]
     ds06_decoded = (np.array(d06CM, dtype="byte") & 0b00000110) >> 1
     # shape of d03_lat and d03_lon: (2030, 1354)
-    d03_lat = xr.open_dataset(M03_file, drop_variables=var_list)['Latitude'][:, :].values
-    d03_lon = xr.open_dataset(M03_file, drop_variables=var_list)['Longitude'][:, :].values
+    #d03_lat = xr.open_dataset(M03_file, drop_variables=var_list)['Latitude'][:, :].values
+    #d03_lon = xr.open_dataset(M03_file, drop_variables=var_list)['Longitude'][:, :].values
+    d03_lat = Dataset(M03_file, "r").variables['Latitude'][:,:]
+    d03_lon = Dataset(M03_file, "r").variables['Longitude'][:,:]
 
     # sampling data with 1/3 ratio, shape of lat and lon: (677, 452), then convert data from 2D to 1D, then add offset to change value range from (-90, 90) to (0, 180) for lat.
     lat = (d03_lat[::3, ::3].ravel() + 89.5).astype(int)
@@ -82,6 +87,7 @@ def calculateCloudFraction(M03_files, M06_files):
             total_pix_global += one_day_result[1]
         except Exception as e:
             print(e)
+            traceback.print_exc()
         # except:
         #     print("Error in M06_file: " + M06_file)
         #     print("Error in M03_file: " + M03_file)
