@@ -27,7 +27,8 @@
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/31 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file.csv input_Jhist.csv
+#python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_1km.csv input_Jhist_1km.csv
+python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_5km.csv input_Jhist_5km.csv
 
 # Example 2: Choose the time from 2008/01/01 to 2008/01/16 with the region [-20,20,0,35] with grid size [1,1] with sampling rate 2
 #			 Calculate Minimum, Maximum, Mean, Pixel Counts. 
