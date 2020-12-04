@@ -134,7 +134,9 @@ def  read_MODIS(varnames,fname1,fname2, spl_num):
 
 	ncfile.close()
 
-	# Read the common variables (Latitude & Longitude) from MYD03 product
+	# Read the common variables (Latitude & Longitude) 
+	#   1km resolution: from MYD03 product 
+	#	5km resolution: from MYD06 product
 	if data_dim == 4:
 		ncfile=Dataset(fname2,'r')
 		d03_lat  = np.array(ncfile.variables['Latitude'][:,:])
@@ -156,7 +158,7 @@ def  read_MODIS(varnames,fname1,fname2, spl_num):
 		if data[key].shape[0] != lat.shape[0]:
 			print("## ERROR!!! ")
 			print("## The dimension of varibale '"+key+"' is not match with latitude & longitude.")
-			print("## Input variables should have 1km resolution.")
+			print("## Input variables should have the same resolution (either 1km or 5km).")
 			print("## Check your varibales in files: \
 				   {} \
 				   {}  ".format(fname1,fname2))
@@ -675,7 +677,7 @@ if __name__ =='__main__':
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
 	
-	subname = 'serial_output_daily_1km.h5'
+	subname = 'serial_output_daily_1km_v3.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
