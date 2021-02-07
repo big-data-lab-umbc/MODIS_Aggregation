@@ -74,7 +74,8 @@ def read_filelist(MYD06_dir,MYD06_prefix,MYD03_dir,MYD03_prefix,year,day_in_year
 		if len(fname1) != len(fname2): 
 			print("## ERROR!!! ")
 			print("## The MYD06 is not consistent with MYD03 within a time (year-day-hour): {}-{}-{}".format(yc,dc,tc))
-			print("## Please check the data pool to have consistent data.")
+			print("## Either the MYD06 or MYD03 is lack of data (or has invalid data).")
+			print("## Please check the Data_input_path in the data_path.csv, and make sure the input path has consistent data.")
 			sys.exit()
 
 		filename1 = np.append(filename1,fname1)
@@ -241,7 +242,7 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in hdfs: #range(2): #hdfs:
+	for j in range(2): #range(2): #hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 		
 		# Retrieve the day and hour from the file name
@@ -474,7 +475,7 @@ if __name__ =='__main__':
 			var_idx   = text_file[:,2] #This is the index of the input variable name which is used for 2D histogram
 			intervals_2d = text_file[:,3]
 		else:
-			intervals_2d,var_idx = [0],[0]
+			intervals_2d,var_idx,histnames = [0],[0],np.nan
 		
 	#-------------STEP 1: Set up the specific directory --------
 	data_path_file = np.array(pd.read_csv(sys.argv[1], header=0, delim_whitespace=True))
@@ -593,9 +594,11 @@ if __name__ =='__main__':
 
 	# Read the User-defined variables from MYD06 product
 	tmp_idx = 0
+	cloud_fraction_flag = 0
 	for key in varnames:
 		if key == 'cloud_fraction': 
 			name_idx = tmp_idx
+			cloud_fraction_flag = 1
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
 			tmp_data,data_dim,lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
@@ -605,6 +608,12 @@ if __name__ =='__main__':
 			longname_list = np.append(longname_list, lonam)
 			fillvalue_list = np.append(fillvalue_list, fill)
 			tmp_idx += 1
+
+	if cloud_fraction_flag == 0: 
+		print("## ERROR!!!")
+		print("## The cloud fraction varibale is not included in the aggregation.") 
+		print("## Please add the cloud fraction to the input_file.csv ")
+		sys.exit()
 
 	# Add the long name of cloud freaction at the first row
 	CM_unit     = 'none'
@@ -660,7 +669,7 @@ if __name__ =='__main__':
 				grid_data[key+'_'+sts_name[3]] =  grid_data[key+'_'+sts_name[3]].reshape([grid_lat,grid_lon])
 			elif i == 4:
 				grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
-				grid_data[key+'_'+sts_name[4]] =  grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
+				grid_data[key+'_'+sts_name[4]] =   grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 			elif i == 5:
 				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
 			elif i == 6:
@@ -677,7 +686,7 @@ if __name__ =='__main__':
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
 	
-	subname = 'serial_output_daily_1km_v3.h5'
+	subname = 'serial_output_daily_1km_test.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
@@ -700,8 +709,11 @@ if __name__ =='__main__':
 			if (sts_name[sts_idx[i]] in key) == True:  
 				#print(sts_name[sts_idx[i]],key,grid_data[key].shape)
 				#print(longname_list[cnt][:20],new_name)
-				#print(cnt,intervals_1d[cnt],intervals_2d[cnt])
-				addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
+				if sts_idx[i] >= 5:
+					#print(cnt,intervals_1d[cnt],intervals_2d[cnt])
+					addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
+				else:
+					addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[0],intervals_2d[0])
 				cnt += 1
 	
 	ff.close()
