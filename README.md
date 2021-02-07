@@ -34,5 +34,8 @@ The code is tested with Python 3.7
 - MS student: Deepak Prakash, Department of Information Systems, UMBC
 - MS student: Lakshmi Priyanka Kandoor, Department of Information Systems, UMBC
 
+# Publications
+- Jianwu Wang, Xin Huang, Jianyu Zheng, Chamara Rajapakshe, Savio Kay, Lakshmi Kandoor, Thomas Maxwell, Zhibo Zhang. Scalable Aggregation Service for Satellite Remote Sensing Data. In Proceedings of the 20th International Conference on Algorithms and Architectures for Parallel Processing (ICA3PP 2020), pages 184-199, Springer, 2020. 
+
 # Acknowledgement
 The project is mainly funded by NASA CMAC program
