@@ -74,7 +74,8 @@ def read_filelist(MYD06_dir,MYD06_prefix,MYD03_dir,MYD03_prefix,year,day_in_year
 		if len(fname1) != len(fname2): 
 			print("## ERROR!!! ")
 			print("## The MYD06 is not consistent with MYD03 within a time (year-day-hour): {}-{}-{}".format(yc,dc,tc))
-			print("## Please check the data pool to have consistent data.")
+			print("## Either the MYD06 or MYD03 is lack of data (or has invalid data).")
+			print("## Please check the Data_input_path in the data_path.csv, and make sure the input path has consistent data.")
 			sys.exit()
 
 		filename1 = np.append(filename1,fname1)
@@ -82,7 +83,7 @@ def read_filelist(MYD06_dir,MYD06_prefix,MYD03_dir,MYD03_prefix,year,day_in_year
 
 	return filename1,filename2
 
-def readEntry(key,ncf, spl_num) :
+def readEntry(key,ncf,spl_num) :
 	# Read the MODIS variables based on User's name list
 	rdval=np.array(ncf.variables[key]).astype(np.float)
 
@@ -99,46 +100,58 @@ def readEntry(key,ncf, spl_num) :
 
 	rdval[np.where(rdval == fillvalue)] = np.nan
 
-	#Sampling the variable
-	rdval = rdval[3::spl_num,3::spl_num]
+	#Sampling the variable if the data is 1km resolution 
+	data_dim = len(str(rdval.shape[0]))
+	if data_dim == 4: #1km resolution has 2030 row pixels, which is 4 digits of data_dim
+		rdval = rdval[3::spl_num,2::spl_num]
 
-	return rdval,lonam,unit,fillvalue,scale,offst
+	return rdval,data_dim,lonam,unit,fillvalue,scale,offst
 
 def  read_MODIS(varnames,fname1,fname2, spl_num): 
 	# Store the data from variables after reading MODIS files
 	data={}
 	
-	# Read the Cloud Mask from MYD06 product
+	# Read the User-defined variables from MYD06 product
 	ncfile=Dataset(fname1,'r')
 
-	#CM1km = readEntry('Cloud_Mask_1km',ncfile)
-	#CM1km = np.array(ncfile.variables['Cloud_Mask_1km'])
-	#data['CM'] = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
-	
-	d06_CM = ncfile.variables['Cloud_Mask_1km'][:,:,0]
-	CM1km  = d06_CM[3::spl_num,3::spl_num]
-	data['CM'] = (np.array(CM1km,dtype='byte') & 0b00000110) >>1
-	data['CM'] = data['CM'].astype(np.float)
-
-	# Read the User-defined variables from MYD06 product
 	for key in varnames:
 		if key == 'cloud_fraction': 
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			data[key],lonam,unit,fill,scale,offst = readEntry(key,ncfile, spl_num)
+			data[key],data_dim,lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
 			data[key] = (data[key] - offst) / scale 
 			data[key] = (data[key] - offst) * scale 
-			
+	
+	# Read the Cloud Mask from MYD06 product
+	if data_dim == 4:
+		d06_CM = ncfile.variables['Cloud_Mask_1km'][:,:,0]
+		CM1km  = d06_CM[3::spl_num,2::spl_num]
+	else:
+		d06_CM = ncfile.variables['Cloud_Mask_5km'][:,:,0]
+		CM1km  = d06_CM
+
+	data['CM'] = (np.array(CM1km,dtype='byte') & 0b00000110) >>1
+	data['CM'] = data['CM'].astype(np.float)
+
 	ncfile.close()
 
-	# Read the common variables (Latitude & Longitude) from MYD03 product
-	ncfile=Dataset(fname2,'r')
-	d03_lat  = np.array(ncfile.variables['Latitude'][:,:])
-	d03_lon  = np.array(ncfile.variables['Longitude'][:,:])
-	lat  = d03_lat[3::spl_num,3::spl_num]
-	lon  = d03_lon[3::spl_num,3::spl_num]
-	attr_lat = ncfile.variables['Latitude']._FillValue
-	attr_lon = ncfile.variables['Longitude']._FillValue
+	# Read the common variables (Latitude & Longitude) 
+	#   1km resolution: from MYD03 product 
+	#	5km resolution: from MYD06 product
+	if data_dim == 4:
+		ncfile=Dataset(fname2,'r')
+		d03_lat  = np.array(ncfile.variables['Latitude'][:,:])
+		d03_lon  = np.array(ncfile.variables['Longitude'][:,:])
+		lat  = d03_lat[3::spl_num,2::spl_num]
+		lon  = d03_lon[3::spl_num,2::spl_num]
+		attr_lat = ncfile.variables['Latitude']._FillValue
+		attr_lon = ncfile.variables['Longitude']._FillValue
+	else: 
+		ncfile=Dataset(fname1,'r')
+		lat  = np.array(ncfile.variables['Latitude'][:,:])
+		lon  = np.array(ncfile.variables['Longitude'][:,:])
+		attr_lat = ncfile.variables['Latitude']._FillValue
+		attr_lon = ncfile.variables['Longitude']._FillValue
 
 	# If the variable is not 1km product, exit and tell the User to reset the variables.
 	for key in varnames:
@@ -146,10 +159,11 @@ def  read_MODIS(varnames,fname1,fname2, spl_num):
 		if data[key].shape[0] != lat.shape[0]:
 			print("## ERROR!!! ")
 			print("## The dimension of varibale '"+key+"' is not match with latitude & longitude.")
-			print("## Input variables should have 1km resolution.")
+			print("## Input variables should have the same resolution (either 1km or 5km).")
 			print("## Check your varibales in files: \
 				   {} \
-				   {}  ".format(fname1.fname2))
+				   {}  ".format(fname1,fname2))
+			print(key+" shape:",data[key].shape,"Lat shape:",lat.shape)
 			sys.exit()
 
 	#Use _FillValue to remove fill data in lat & lon
@@ -228,7 +242,7 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in hdfs: #range(2):#hdfs:
+	for j in range(2): #range(2): #hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 		
 		# Retrieve the day and hour from the file name
@@ -358,7 +372,7 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 
 					# Calculate Statistics pamameters
 					grid_data = cal_stats(z,key,grid_data, \
-										  min_val,max_val,tot_val,CLD_pix,all_val,all_val_2d, \
+										  min_val,max_val,tot_val,TOT_pix,all_val,all_val_2d, \
 										  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx, histnames)
 
 					key_idx += 1
@@ -461,7 +475,7 @@ if __name__ =='__main__':
 			var_idx   = text_file[:,2] #This is the index of the input variable name which is used for 2D histogram
 			intervals_2d = text_file[:,3]
 		else:
-			intervals_2d,var_idx = [0],[0]
+			intervals_2d,var_idx,histnames = [0],[0],np.nan
 		
 	#-------------STEP 1: Set up the specific directory --------
 	data_path_file = np.array(pd.read_csv(sys.argv[1], header=0, delim_whitespace=True))
@@ -580,18 +594,26 @@ if __name__ =='__main__':
 
 	# Read the User-defined variables from MYD06 product
 	tmp_idx = 0
+	cloud_fraction_flag = 0
 	for key in varnames:
 		if key == 'cloud_fraction': 
 			name_idx = tmp_idx
+			cloud_fraction_flag = 1
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			tmp_data,lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
+			tmp_data,data_dim,lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
 			unit_list  = np.append(unit_list,unit)
 			scale_list = np.append(scale_list,scale)
 			offst_list = np.append(offst_list,offst)
 			longname_list = np.append(longname_list, lonam)
 			fillvalue_list = np.append(fillvalue_list, fill)
 			tmp_idx += 1
+
+	if cloud_fraction_flag == 0: 
+		print("## ERROR!!!")
+		print("## The cloud fraction varibale is not included in the aggregation.") 
+		print("## Please add the cloud fraction to the input_file.csv ")
+		sys.exit()
 
 	# Add the long name of cloud freaction at the first row
 	CM_unit     = 'none'
@@ -647,7 +669,7 @@ if __name__ =='__main__':
 				grid_data[key+'_'+sts_name[3]] =  grid_data[key+'_'+sts_name[3]].reshape([grid_lat,grid_lon])
 			elif i == 4:
 				grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
-				grid_data[key+'_'+sts_name[4]] =  grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
+				grid_data[key+'_'+sts_name[4]] =   grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 			elif i == 5:
 				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
 			elif i == 6:
@@ -664,7 +686,7 @@ if __name__ =='__main__':
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
 	
-	subname = 'serial_output_twoday.h5'
+	subname = 'serial_output_daily_1km_test.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
@@ -687,8 +709,11 @@ if __name__ =='__main__':
 			if (sts_name[sts_idx[i]] in key) == True:  
 				#print(sts_name[sts_idx[i]],key,grid_data[key].shape)
 				#print(longname_list[cnt][:20],new_name)
-				#print(cnt,intervals_1d[cnt],intervals_2d[cnt])
-				addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
+				if sts_idx[i] >= 5:
+					#print(cnt,intervals_1d[cnt],intervals_2d[cnt])
+					addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
+				else:
+					addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[0],intervals_2d[0])
 				cnt += 1
 	
 	ff.close()
