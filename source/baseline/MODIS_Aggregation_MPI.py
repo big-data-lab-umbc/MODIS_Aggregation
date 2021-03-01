@@ -598,7 +598,7 @@ if __name__ =='__main__':
 		
 		#print(fname1.shape,fname2.shape)
 
-	total_file_num = 2 #len(fname1) #np.arange(len(fname1))
+	total_file_num = len(fname1) #np.arange(len(fname1))
 	#print(fname1)
 	
 	#--------------STEP 5: Read Attributes of each variables----------------------------------
@@ -749,7 +749,7 @@ if __name__ =='__main__':
 		PC=ff.create_dataset('lon_bnd',data=map_lon)
 		PC.attrs['units']='degrees'
 		PC.attrs['long_name']='Longitude_boundaries'    
-		
+
 		PCentry=ff.create_dataset('GRID_Counts',data=grid_data['GRID_Counts'].reshape([grid_lat,grid_lon]))
 		PCentry.dims[0].label='lat_bnd'
 		PCentry.dims[1].label='lon_bnd'

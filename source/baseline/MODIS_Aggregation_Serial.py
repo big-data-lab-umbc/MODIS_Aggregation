@@ -585,7 +585,7 @@ if __name__ =='__main__':
 		
 		#print(fname1.shape,fname2.shape)
 
-	filenum = np.arange(2) #np.arange(len(fname1))
+	filenum = np.arange(len(fname1))
 	#print(fname1)
 	
 	#--------------STEP 5: Read Attributes of each variables----------------------------------
