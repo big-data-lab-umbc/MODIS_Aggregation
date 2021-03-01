@@ -195,12 +195,14 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 	if (sts_switch[2] == True) | (sts_switch[3] == True):
 		grid_data[key+'_'+sts_name[2]][z] += tot_val
 		grid_data[key+'_'+sts_name[3]][z] += count
-	
+		
 	#Standard Deviation 
 	if sts_switch[4] == True:
 		if key == 'cloud_fraction':
+			#print(key,all_val**2,grid_data['GRID_Counts'][z])
 			grid_data[key+'_'+sts_name[4]][z] += all_val**2
 		else:
+			#print(key,np.nansum((all_val - tot_val/count)**2) / count )
 			grid_data[key+'_'+sts_name[4]][z] += np.nansum((all_val - tot_val/count)**2) / count #tot_val**2
 
 	#1D Histogram 
@@ -242,10 +244,10 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 	return grid_data
 
 def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,hdfs, \
-					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames):
+					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx,spl_num,sts_name,histnames):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
-	for j in hdfs: #range(2): #hdfs:
+	for j in hdfs: #range(4): #hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 		
 		# Retrieve the day and hour from the file name
@@ -422,6 +424,17 @@ def addGridEntry(f,name,units,long_name,fillvalue,scale_factor,add_offset,data,h
 		PCentry.attrs['Histogram_Bin_Boundaries']  = hist_bin
 		PCentry.attrs['Joint_Parameter_Histogram_Bin_Boundaries']  = join_hist_bin
 
+def addCounter(counter1, counter2):
+	for key in counter2:
+		if key.find("Minimum") != -1: 
+			counter1[key] = np.fmin(counter1[key],counter2[key])
+		elif key.find("Maximum") != -1: 
+			counter1[key] = np.fmax(counter1[key],counter2[key])
+		else:
+			counter1[key] += counter2[key]
+
+	return counter1
+
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
 	
@@ -431,13 +444,13 @@ if __name__ =='__main__':
 		print("## ERROR!!!")
 		print("## Wrong user input")
 		print("## Please see the example below:")
-		print("## python MODIS_Aggregation_Serial.py \
-						 <Data Path> <Start Date: yyyy-mm-dd> <End Date: yyyy-mm-dd> \
-						 <Polygon boundaries> <Lat & Lon Grid Size > \
-						 <Sampling number larger than 0> \
-						 <1/0> <1/0> <1/0> \
-						 <1/0> <1/0> <1/0> \
-						 <1/0> <Variable Imput File> <JHist Variable Imput File>")
+		print("## python MODIS_Aggregation_Serial.py \n" + \
+			  "   <Data Path> <Start Date: yyyy-mm-dd> <End Date: yyyy-mm-dd> \n" + \
+			  "   <Polygon boundaries> <Lat & Lon Grid Size > \n" + \
+			  "   <Sampling number larger than 0> \n" + \
+			  "   <1/0> <1/0> <1/0> \n" + \
+			  "   <1/0> <1/0> <1/0> \n" + \
+			  "   <1/0> <Variable Imput File> <JHist Variable Imput File>")
 		
 		#start_date=np.fromstring(sys.argv[2], dtype=np.int, sep='/' )
 		#end_date=np.fromstring(sys.argv[2], dtype=np.int, sep='/' )
@@ -585,7 +598,7 @@ if __name__ =='__main__':
 		
 		#print(fname1.shape,fname2.shape)
 
-	filenum = np.arange(2) #np.arange(len(fname1))
+	total_file_num = 2 #len(fname1) #np.arange(len(fname1))
 	#print(fname1)
 	
 	#--------------STEP 5: Read Attributes of each variables----------------------------------
@@ -639,100 +652,142 @@ if __name__ =='__main__':
 	# Start counting operation time
 	start_time = timeit.default_timer() 
 
-	#print(fname1.shape,fname2.shape)
-	#for i in range(len(fname1)):
-	#	print(fname1[i],fname2[i])
+	# Initiate MPI 
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+	size = comm.Get_size()
+	random.seed(rank)
+
+	# Initiate the number of files for MPI
+	remain   = size-total_file_num%size
+
+	files_part1 = np.arange(total_file_num + remain)
+	tasks_part1 = np.array(np.split(files_part1,size))
+
+	files_part2 = np.arange(total_file_num - tasks_part1[rank].size * (size-remain)) + tasks_part1[rank].size * (size-remain)
+	tasks_part2 = np.array(np.split(files_part2,remain))
+
+	if rank < (size-remain): 
+		#print(rank)
+		fileloop = tasks_part1[rank] 
+	else:
+		#print(rank,rank-(size-remain))
+		fileloop = tasks_part2[rank-(size-remain)] 
+
+	print("Process {} calculating files from {} to {}... (Total: {} / {})".format(rank, fileloop[0],fileloop[-1],fileloop.shape[0],total_file_num))
+	
 	#sys.exit()
 
-	grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
-								grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)
+	if rank == 0: 
+		#grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
+		#							grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)
+		grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
+								    grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name  ,histnames)
 		
-	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
+		for i in range(1,size):
+			results = comm.recv(source=i, tag=0)
+			grid_data = addCounter(grid_data, results)
+			
+		#counterSumOp = MPI.Op.Create(addCounter, commute=True)
+		#grid_data = comm.allreduce(results, op=counterSumOp)
 
-	# Reference for statstic parameters
-	# sts_name[0]: min
-	# sts_name[1]: max
-	# sts_name[2]: mean -> total_value / count
-	# sts_name[3]: count
-	# sts_name[4]: square -> ((total_square_value / count) - mean**2) ** 0.5
-	# sts_name[5]: histogram
-	# sts_name[6]: joint histogram
+		# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 
-	sts_idx = np.array(np.where(sts_switch == True))[0]
-	print("Index of User-defined Statistics:",sts_idx)
-	key_idx = 0
-	for key in varnames:
-		for i in sts_idx:
-			if i == 0:
-				grid_data[key+'_'+sts_name[0]] = grid_data[key+'_'+sts_name[0]].reshape([grid_lat,grid_lon])
-			elif i == 1:
-				grid_data[key+'_'+sts_name[1]] = grid_data[key+'_'+sts_name[1]].reshape([grid_lat,grid_lon])
-			elif i == 2:
-				grid_data[key+'_'+sts_name[2]] = (grid_data[key+'_'+sts_name[2]] / grid_data[key+'_'+sts_name[3]])
-				grid_data[key+'_'+sts_name[2]] =  grid_data[key+'_'+sts_name[2]].reshape([grid_lat,grid_lon])
-			elif i == 3:
-				grid_data[key+'_'+sts_name[3]] =  grid_data[key+'_'+sts_name[3]].reshape([grid_lat,grid_lon])
-			elif i == 4:
-				if key == 'cloud_fraction':
-					grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data['GRID_Counts']) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
-				else:
-					grid_data[key+'_'+sts_name[4]] = grid_data[key+'_'+sts_name[4]] / grid_data['GRID_Counts']
-				grid_data[key+'_'+sts_name[4]] = grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
-			elif i == 5:
-				grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
-			elif i == 6:
-				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = grid_data[key+'_'+sts_name[6]+histnames[key_idx]].reshape([grid_lat,grid_lon,bin_num1[key_idx],bin_num2[key_idx]])
-		key_idx += 1	
-
-	end_time = timeit.default_timer()
-
-	#print('Mean_Fraction:')
-	#print( Mean_Fraction  )
-
-	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
+		# Reference for statstic parameters
+		# sts_name[0]: min
+		# sts_name[1]: max
+		# sts_name[2]: mean / total_value
+		# sts_name[3]: count
+		# sts_name[4]: square
+		# sts_name[5]: histogram
+		# sts_name[6]: joint histogram
 	
-	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
-	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
+		sts_idx = np.array(np.where(sts_switch == True))[0]
+		print("Index of User-defined Statistics:",sts_idx)
+		print(grid_data['GRID_Counts'].reshape([grid_lat,grid_lon]))
+		key_idx = 0
+		for key in varnames:
+			for i in sts_idx:
+				if i == 0:
+					grid_data[key+'_'+sts_name[0]] = grid_data[key+'_'+sts_name[0]].reshape([grid_lat,grid_lon])
+				elif i == 1:
+					grid_data[key+'_'+sts_name[1]] = grid_data[key+'_'+sts_name[1]].reshape([grid_lat,grid_lon])
+				elif i == 2:
+					grid_data[key+'_'+sts_name[2]] = grid_data[key+'_'+sts_name[2]] / grid_data[key+'_'+sts_name[3]]
+					grid_data[key+'_'+sts_name[2]] = grid_data[key+'_'+sts_name[2]].reshape([grid_lat,grid_lon])
+				elif i == 3:
+					grid_data[key+'_'+sts_name[3]] = grid_data[key+'_'+sts_name[3]].reshape([grid_lat,grid_lon])
+				elif i == 4:
+					if key == 'cloud_fraction':
+						grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data['GRID_Counts']) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
+					else:
+						grid_data[key+'_'+sts_name[4]] = grid_data[key+'_'+sts_name[4]] / grid_data['GRID_Counts']
+					grid_data[key+'_'+sts_name[4]] = grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
+				elif i == 5:
+					grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
+				elif i == 6:
+					grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = grid_data[key+'_'+sts_name[6]+histnames[key_idx]].reshape([grid_lat,grid_lon,bin_num1[key_idx],bin_num2[key_idx]])
+			key_idx += 1	
+		
+		end_time = timeit.default_timer()
 	
-	subname = 'serial_output_daily_5km.h5'
-	ff=h5py.File(output_dir+l3name+subname,'w')
-
-	PC=ff.create_dataset('lat_bnd',data=map_lat)
-	PC.attrs['units']='degrees'
-	PC.attrs['long_name']='Latitude_boundaries'    
-
-	PC=ff.create_dataset('lon_bnd',data=map_lon)
-	PC.attrs['units']='degrees'
-	PC.attrs['long_name']='Longitude_boundaries'    
-
-	PCentry=ff.create_dataset('GRID_Counts',data=grid_data['GRID_Counts'].reshape([grid_lat,grid_lon]))
-	PCentry.dims[0].label='lat_bnd'
-	PCentry.dims[1].label='lon_bnd'
-	PC.attrs['units']='none'
-	PC.attrs['long_name']='grid_point_counts'    
-
-	for i in range(sts_idx.shape[0]):
-		cnt = 0
-		for key in grid_data:
-
-			if key.find("1km") != -1: 
-				new_name = key.replace("_1km", "")
-			else: 
-				new_name = key
-
-			if (sts_name[sts_idx[i]] in key) == True:  
-				#print(sts_name[sts_idx[i]],key,grid_data[key].shape)
-				#print(longname_list[cnt][:20],new_name)
-				if sts_idx[i] >= 5:
-					#print(cnt,intervals_1d[cnt],intervals_2d[cnt])
-					addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
-				else:
-					addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[0],intervals_2d[0])
-				cnt += 1
+		#print('Mean_Fraction:')
+		#print( Mean_Fraction  )
 	
-	ff.close()
+		print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
+		
+		#--------------STEP 7:  Create HDF5 file to store the result------------------------------
+		l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
+		
+		subname = 'MPI_output_monthly_5km.h5'
+		ff=h5py.File(output_dir+l3name+subname,'w')
+		
+		PC=ff.create_dataset('lat_bnd',data=map_lat)
+		PC.attrs['units']='degrees'
+		PC.attrs['long_name']='Latitude_boundaries'    
+		
+		PC=ff.create_dataset('lon_bnd',data=map_lon)
+		PC.attrs['units']='degrees'
+		PC.attrs['long_name']='Longitude_boundaries'    
+		
+		PCentry=ff.create_dataset('GRID_Counts',data=grid_data['GRID_Counts'].reshape([grid_lat,grid_lon]))
+		PCentry.dims[0].label='lat_bnd'
+		PCentry.dims[1].label='lon_bnd'
+		PC.attrs['units']='none'
+		PC.attrs['long_name']='grid_point_counts'    
 
-	print(l3name+subname+' Saved!')
-	#---------------------------COMPLETED------------------------------------------------------
+		for i in range(sts_idx.shape[0]):
+			cnt = 0
+			for key in grid_data:
+		
+				if key.find("1km") != -1: 
+					new_name = key.replace("_1km", "")
+				else: 
+					new_name = key
+
+				if (sts_name[sts_idx[i]] in key) == True:  
+					#print(cnt,sts_name[sts_idx[i]],key,grid_data[key].shape)
+					#print(longname_list[cnt][:20],new_name)
+					if sts_idx[i] >= 5:
+						#print(cnt,unit_list.shape,intervals_1d[cnt],intervals_2d[cnt])
+						addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[cnt],intervals_2d[cnt])
+					else:
+						#print(cnt,unit_list.shape,intervals_1d[cnt],intervals_2d[cnt])
+						addGridEntry(ff,new_name,unit_list[cnt],longname_list[cnt],fillvalue_list[cnt],scale_list[cnt],offst_list[cnt],grid_data[key],intervals_1d[0],intervals_2d[0])
+					cnt += 1
+		
+		ff.close()
+
+		print(l3name+subname+' Saved!')
+	
+	else:
+		results = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
+								  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name  ,histnames)
+		massage = "Process {} finished".format(rank)
+		print(massage)
+		comm.send(results, dest=0, tag=0)
+
+		
+#---------------------------COMPLETED------------------------------------------------------
 
 
