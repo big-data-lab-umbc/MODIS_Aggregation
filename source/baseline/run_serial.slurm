@@ -6,6 +6,7 @@
 #SBATCH --qos=medium+
 #SBATCH --nodes=1
 #SBATCH --exclusive
+#SBATCH --time=12:00:00
 #SBATCH --mem=MaxMemPerNode
 #SBATCH --account=pi_jianwu
 
