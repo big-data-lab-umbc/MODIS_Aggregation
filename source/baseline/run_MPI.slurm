@@ -1,11 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=MODIS_agg
-#SBATCH --output=modis_serial.out
-#SBATCH --error=modis_serial.err
+#SBATCH --job-name=MODISMPI
+#SBATCH --output=journal_benchmark/MPI/modis_MPI_5km.out
+#SBATCH --error=journal_benchmark/MPI/modis_MPI_5km.err
 #SBATCH --partition=high_mem
 #SBATCH --qos=medium+
-#SBATCH --nodes=1
-#SBATCH --exclusive
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=20
+##SBATCH --exclusive
 #SBATCH --time=12:00:00
 #SBATCH --mem=MaxMemPerNode
 #SBATCH --account=pi_jianwu
@@ -28,7 +29,7 @@
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_1km.csv input_Jhist_1km.csv
+mpirun -n 80 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/31 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_1km.csv input_Jhist_1km.csv
 
 # Example 2: Choose the time from 2008/01/01 to 2008/01/31 with the region [-90,90,-180,180] with grid size [1,1] with sampling rate 3
 #			 Calculate Minimum, Maximum, Mean, Pixel Counts, Standard Deviation, Histogram and Joint Histogram. 
@@ -38,7 +39,7 @@ python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,
 #              Cloud_Effective_Emissivity 
 #              cloud_fraction             
 #              Cloud_Top_Height           
-#python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_5km.csv input_Jhist_5km.csv
+#mpirun -n 80 python3 MODIS_Aggregation_MPI.py data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_5km.csv input_Jhist_5km.csv
 
 # Example 3: Choose the time from 2008/01/01 to 2008/01/16 with the region [-20,20,0,35] with grid size [1,1] with sampling rate 2
 #			 Calculate Minimum, Maximum, Mean, Pixel Counts. 
@@ -48,7 +49,7 @@ python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-#python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-20,20,0,35] [1,1] [5] 1 1 1 0 0 0 0 input_file_1km.csv input_Jhist_1km.csv
+#mpirun -n 80 python3 MODIS_Aggregation_MPI.py data_path.csv 2008/01/01 2008/01/01 [-20,20,0,35] [1,1] [5] 1 1 1 0 0 0 0 input_file_1km.csv input_Jhist_1km.csv
 
 # Example 4: Choose the time from 2008/01/01 to 2008/01/09 with the region [-90,90,-180,180] with grid size [0.5,0.625] with sampling rate 3
 #			 Calculate Standard Deviation, Histogram and Joint Histogram. 
@@ -58,4 +59,5 @@ python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/01 [-90,90,
 #              cloud_emissivity_1km     
 #              Cloud_Fraction           
 #              cloud_top_height_1km     
-#python3 MODIS_Aggregation_Serial.py data_path.csv 2008/01/01 2008/01/10 [-90,90,-180,180] [0.5,0.625] [5] 0 0 0 0 1 1 1 input_file_1km.csv input_Jhist_1km.csv
+#mpirun -n 80 python3 MODIS_Aggregation_MPI.py data_path.csv 2008/01/01 2008/01/10 [-90,90,-180,180] [0.5,0.625] [5] 0 0 0 0 1 1 1 input_file_1km.csv input_Jhist_1km.csv
+
