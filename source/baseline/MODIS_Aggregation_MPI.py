@@ -196,39 +196,42 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 		grid_data[key+'_'+sts_name[2]][z] += tot_val
 		grid_data[key+'_'+sts_name[3]][z] += count
 		
-	#Standard Deviation 
-	if sts_switch[4] == True:
-		if key == 'cloud_fraction':
-			#print(key,all_val**2,grid_data['GRID_Counts'][z])
-			grid_data[key+'_'+sts_name[4]][z] += all_val**2
-		else:
-			#print(key,np.nansum((all_val - tot_val/count)**2) / count )
-			grid_data[key+'_'+sts_name[4]][z] += np.nansum((all_val - tot_val/count)**2) / count #tot_val**2
-
-	#1D Histogram 
-	if sts_switch[5] == True:	
-		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-		if all_val.size == 1: 
-			all_val = np.array([all_val])
-		else:
-			hist_idx1 = np.histogram(all_val,bins=bin_interval1)[0]
-			grid_data[key+'_'+sts_name[5]][z,:] += hist_idx1
-		#for i in range(all_val.size):
-		#	hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
-		#	#hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
-		#	#if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
-		#	grid_data[key+'_'+sts_name[5]][z, hist_idx1] += 1
+	# Check if all of data within a grid is NaN, if yes, the STD and Histogram will not counted
+	if len(all_val[~np.isnan(all_val)]) != 0: 
 		
-	#2D Histogram 
-	if sts_switch[6] == True:
-		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-		bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
-		if all_val.size == 1:
-			all_val = np.array([all_val])
-			all_val_2d = np.array([all_val_2d])
-		else:
-			hist_idx2 = np.histogram2d(all_val,all_val_2d,bins=(bin_interval1,bin_interval2))[0]
-			grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z,:,:] += hist_idx2
+		grid_data['GRID_Counts'][z] += 1
+
+		#Standard Deviation 
+		if sts_switch[4] == True:
+			if key == 'cloud_fraction':
+				grid_data[key+'_'+sts_name[4]][z] += tot_val**2
+			else:
+				grid_data[key+'_'+sts_name[4]][z] += np.sum(all_val[~np.isnan(all_val)]**2) #np.nansum((all_val - tot_val/count)**2) / count 
+			
+		#1D Histogram 
+		if sts_switch[5] == True:	
+			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+			if all_val.size == 1: 
+				all_val = np.array([all_val])
+			else:
+				hist_idx1 = np.histogram(all_val[~np.isnan(all_val)],bins=bin_interval1)[0]
+				grid_data[key+'_'+sts_name[5]][z,:] += hist_idx1
+			#for i in range(all_val.size):
+			#	hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
+			#	#hist_idx1 = 0 if len(hist_idx1) == 0 else hist_idx1[-1]
+			#	#if hist_idx1 > (grid_data[key+'_'+sts_name[5]].shape[1]-1): hist_idx1 = (grid_data[key+'_'+sts_name[5]].shape[1]-1) 
+			#	grid_data[key+'_'+sts_name[5]][z, hist_idx1] += 1
+			
+		#2D Histogram 
+		if sts_switch[6] == True:
+			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+			bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+			if all_val.size == 1:
+				all_val = np.array([all_val])
+				all_val_2d = np.array([all_val_2d])
+			else:
+				hist_idx2 = np.histogram2d(all_val[~np.isnan(all_val)],all_val_2d[~np.isnan(all_val_2d)],bins=(bin_interval1,bin_interval2))[0]
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]][z,:,:] += hist_idx2
 
 		#for i in range(all_val_2d.size):
 		#	hist_idx1 = np.where(bin_interval1 <= all_val[i])[0]
@@ -332,10 +335,9 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 			if((z >= 0) & (z < (grid_lat*grid_lon))):
 
 				# For cloud fraction
-				TOT_pix = np.sum(CM[np.where(latlon_index == z)]>=0).astype(float)
-				CLD_pix = np.sum(CM[np.where(latlon_index == z)]<=1).astype(float)
-				grid_data['GRID_Counts'][z] += 1
-
+				TOT_pix = np.nansum(CM[np.where(latlon_index == z)]>=0).astype(float)
+				CLD_pix = np.nansum(CM[np.where(latlon_index == z)]<=1).astype(float)
+				
 				#local_data = CM[np.where(latlon_index == z)]
 				#if local_data[np.where(np.isnan(local_data) == 0)].size == 0: 
 				#	print('All NaN is Ture.')
@@ -718,10 +720,7 @@ if __name__ =='__main__':
 				elif i == 3:
 					grid_data[key+'_'+sts_name[3]] = grid_data[key+'_'+sts_name[3]].reshape([grid_lat,grid_lon])
 				elif i == 4:
-					if key == 'cloud_fraction':
-						grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data['GRID_Counts']) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
-					else:
-						grid_data[key+'_'+sts_name[4]] = grid_data[key+'_'+sts_name[4]] / grid_data['GRID_Counts']
+					grid_data[key+'_'+sts_name[4]] = ((grid_data[key+'_'+sts_name[4]] / grid_data[key+'_'+sts_name[3]].ravel()) - grid_data[key+'_'+sts_name[2]].ravel()**2)**0.5
 					grid_data[key+'_'+sts_name[4]] = grid_data[key+'_'+sts_name[4]].reshape([grid_lat,grid_lon])
 				elif i == 5:
 					grid_data[key+'_'+sts_name[5]] = grid_data[key+'_'+sts_name[5]].reshape([grid_lat,grid_lon,bin_num1[key_idx]])
