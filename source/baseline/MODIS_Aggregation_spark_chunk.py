@@ -689,7 +689,7 @@ if __name__ =='__main__':
 
 	#spark implement
 	file_num = len(fname1)
-	CHUNK_NUM = 8
+	CHUNK_NUM = 80
 	print("file_num:", file_num)
 	files_range = range(file_num)
 	chunks = np.array_split(files_range, CHUNK_NUM)
@@ -755,7 +755,7 @@ if __name__ =='__main__':
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
 	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
 	
-	subname = 'spark_output_daily_5km.h5'
+	subname = 'spark_output_monthly_chunk_80.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
