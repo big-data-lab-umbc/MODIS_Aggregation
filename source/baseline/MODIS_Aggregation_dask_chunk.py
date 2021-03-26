@@ -2,7 +2,7 @@
 # coding:utf8
 # -*- coding: utf-8 -*-
 """
-Main Program: Run MODIS AGGREGATION IN SPARK WITH FLEXIBLE STATISTICS 
+Main Program: Run MODIS AGGREGATION IN DASK WITH FLEXIBLE STATISTICS 
 Created on 2021
 @author: Xin Huang
 
@@ -38,9 +38,12 @@ from netCDF4 import Dataset
 from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
-from pyspark.sql import SparkSession
-import pyspark
-	
+import dask
+from dask.distributed import as_completed
+from dask_jobqueue import SLURMCluster
+from dask.distributed import Client
+from dask.distributed import wait	
+
 def read_filelist(MYD06_dir,MYD06_prefix,MYD03_dir,MYD03_prefix,year,day_in_year,time,fileformat):
 	filename1,filename2 = [],[]
 
@@ -243,7 +246,7 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 		
 	return grid_data
 
-def run_modis_aggre(hdfs, fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,xhdfs, \
+def run_modis_aggre(hdfs, fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
 					sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames):
 	# This function is the data aggregation loops by number of files
 	# hdfs = np.array(hdfs)
@@ -557,31 +560,31 @@ if __name__ =='__main__':
 	grid_lat=np.int((NTA_lats[-1]-NTA_lats[0])/gap_y)
 
 	#--------------STEP 3: Create arrays for level-3 statistics data-------------------------
-	grid_data = {}
-	bin_num1 = np.zeros(len(varnames)).astype(np.int)
-	bin_num2 = np.zeros(len(varnames)).astype(np.int)
-	grid_data['GRID_Counts'] = np.zeros(grid_lat*grid_lon).astype(np.int)
-	key_idx = 0
-	for key in varnames:
-		if sts_switch[0] == True:
-			grid_data[key+'_'+sts_name[0]] = np.zeros(grid_lat*grid_lon) + np.inf
-		if sts_switch[1] == True:
-			grid_data[key+'_'+sts_name[1]] = np.zeros(grid_lat*grid_lon) - np.inf
-		if (sts_switch[2] == True) | (sts_switch[3] == True) | (sts_switch[4] == True):
-			grid_data[key+'_'+sts_name[2]] = np.zeros(grid_lat*grid_lon)
-			grid_data[key+'_'+sts_name[3]] = np.zeros(grid_lat*grid_lon)
-			grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
-		if sts_switch[5] == True:
-			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
-			bin_num1[key_idx] = bin_interval1.shape[0]-1
-			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx]))
+	#grid_data = {}
+	#bin_num1 = np.zeros(len(varnames)).astype(np.int)
+	#bin_num2 = np.zeros(len(varnames)).astype(np.int)
+	#grid_data['GRID_Counts'] = np.zeros(grid_lat*grid_lon).astype(np.int)
+	#key_idx = 0
+	#for key in varnames:
+	#	if sts_switch[0] == True:
+	#		grid_data[key+'_'+sts_name[0]] = np.zeros(grid_lat*grid_lon) + np.inf
+	#	if sts_switch[1] == True:
+	#		grid_data[key+'_'+sts_name[1]] = np.zeros(grid_lat*grid_lon) - np.inf
+	#	if (sts_switch[2] == True) | (sts_switch[3] == True) | (sts_switch[4] == True):
+	#		grid_data[key+'_'+sts_name[2]] = np.zeros(grid_lat*grid_lon)
+	#		grid_data[key+'_'+sts_name[3]] = np.zeros(grid_lat*grid_lon)
+	#		grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
+	#	if sts_switch[5] == True:
+	#		bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+	#		bin_num1[key_idx] = bin_interval1.shape[0]-1
+	#		grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx]))
 
-			if sts_switch[6] == True:
-				bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
-				bin_num2[key_idx] = bin_interval2.shape[0]-1
-				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx],bin_num2[key_idx]))
+	#		if sts_switch[6] == True:
+	#			bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+	#			bin_num2[key_idx] = bin_interval2.shape[0]-1
+	#			grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx],bin_num2[key_idx]))
 
-		key_idx += 1
+	#	key_idx += 1
 
 	#--------------STEP 4: Read the filename list for different time period-------------------
 	fname1,fname2 = [],[]
@@ -687,7 +690,7 @@ if __name__ =='__main__':
 	#	print(fname1[i],fname2[i])
 	#sys.exit()
 
-	#spark implement
+	# parallel implement
 	file_num = len(fname1)
 	CHUNK_NUM = 80
 	print("file_num:", file_num)
@@ -696,14 +699,61 @@ if __name__ =='__main__':
 	print("chunks:", chunks)
 
 	# Initiate and process the parallel by Spark	
-	spark = SparkSession\
-		.builder\
-		.appName("MODIS_agg_spark")\
-		.getOrCreate()
+	# spark = SparkSession\
+	#	.builder\
+	#	.appName("MODIS_agg_spark")\
+	#	.getOrCreate()
 
-	sc = spark.sparkContext
-	grid_data = sc.parallelize(chunks, CHUNK_NUM).map(lambda x: run_modis_aggre(x,fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
-										sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)).reduce(addCounter) 
+	#sc = spark.sparkContext
+	#grid_data = sc.parallelize(chunks, CHUNK_NUM).map(lambda x: run_modis_aggre(x,fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
+	#									sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)).reduce(addCounter) 
+
+	# Initiate and process the parallel by Dask
+	kwargv = {"fname1": fname1, "fname2": fname2, "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num,  "sts_name":sts_name, "histnames":histnames}
+
+	cluster = SLURMCluster(cores=1, memory='64 GB', project='pi_jianwu',\
+		queue='high_mem', walltime='16:00:00', job_extra=['--exclusive', '--qos=medium+'])
+	cluster.scale(4)
+	client = Client(cluster)
+	tt = client.map(run_modis_aggre, chunks, **kwargv)
+
+	#init the global data result 
+	grid_data = {}
+	bin_num1 = np.zeros(len(varnames)).astype(np.int)
+	bin_num2 = np.zeros(len(varnames)).astype(np.int)
+	grid_data['GRID_Counts'] = np.zeros(grid_lat*grid_lon).astype(np.int)
+	key_idx = 0
+	for key in varnames:
+		if sts_switch[0] == True:
+			grid_data[key+'_'+sts_name[0]] = np.zeros(grid_lat*grid_lon) + np.inf
+		if sts_switch[1] == True:
+			grid_data[key+'_'+sts_name[1]] = np.zeros(grid_lat*grid_lon) - np.inf
+		if (sts_switch[2] == True) | (sts_switch[3] == True) | (sts_switch[4] == True):
+			grid_data[key+'_'+sts_name[2]] = np.zeros(grid_lat*grid_lon)
+			grid_data[key+'_'+sts_name[3]] = np.zeros(grid_lat*grid_lon)
+			grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
+		if sts_switch[5] == True:
+			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+			bin_num1[key_idx] = bin_interval1.shape[0]-1
+			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx]))
+
+			if sts_switch[6] == True:
+				bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+				bin_num2[key_idx] = bin_interval2.shape[0]-1
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx],bin_num2[key_idx]))
+
+		key_idx += 1
+
+	# aggregate the result
+	for future, result in as_completed(tt, with_results= True):
+		for key in result:
+			if key.find("Minimum") != -1: 
+				grid_data[key] = np.fmin(grid_data[key],result[key])
+			elif key.find("Maximum") != -1:
+				grid_data[key] = np.fmax(grid_data[key],result[key])
+			else:
+				grid_data[key] += result[key]
+		
 
 	#grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
 	#							grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)
