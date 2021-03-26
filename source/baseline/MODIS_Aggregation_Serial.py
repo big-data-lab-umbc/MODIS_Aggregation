@@ -318,7 +318,7 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 				data[key][cutoff] = np.nan
 
 
-		# Locate the lat lon index into 3-Level frid box
+		# Locate the lat lon index into 3-Level grid box
 		idx_lon = ((lon-NTA_lons[0])/gap_x).astype(int)
 		idx_lat = ((lat-NTA_lats[0])/gap_y).astype(int)
 
@@ -373,6 +373,7 @@ def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_
 					min_val = np.nanmin(pixel_data[np.where(latlon_index == z)]).astype(float)
 
 					if len(intervals_2d) != 1:
+						#print(key,varnames[var_idx[key_idx]])
 						pixel_data_2d = data[varnames[var_idx[key_idx]]]
 						all_val_2d = np.array(pixel_data_2d[np.where(latlon_index == z)]).astype(float)
 					else:
@@ -482,6 +483,7 @@ if __name__ =='__main__':
 			histnames = text_file[:,1] 
 			var_idx   = text_file[:,2] #This is the index of the input variable name which is used for 2D histogram
 			intervals_2d = text_file[:,3]
+			print("2d",text_file)
 		else:
 			intervals_2d,var_idx,histnames = [0],[0],np.nan
 		
@@ -496,7 +498,17 @@ if __name__ =='__main__':
 	output_path_file = np.array(pd.read_csv(sys.argv[1], header=3, delim_whitespace=True))
 	output_dir = output_path_file[0,0]
 	output_prefix = output_path_file[0,1]
-	
+
+	# Check if output hdf file name already exist
+	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
+	subname = 'serial_output_daily_test.h5'
+	hdf_exist = np.int(os.popen('[ -f {} ] && echo "1" || echo "2"'.format(output_dir+l3name+subname)).read()[:-1])
+	if hdf_exist == 1: 
+		print("## ERROR!!!")
+		print("## The output HDF file name exist")
+		print("## Please rename the output HDF!")
+		sys.exit()
+
 	#-------------STEP 2: Set up spactial and temporal resolution & variable names----------
 	NTA_lats = [poly[0],poly[1]] #[  0,40] #[-90,90]   #[-30,30]    
 	NTA_lons = [poly[2],poly[3]] #[-40,60] #[-180,180] #[-60,60]  
@@ -693,9 +705,6 @@ if __name__ =='__main__':
 	print ("Operation Time in {:7.2f} seconds".format(end_time - start_time))
 	
 	#--------------STEP 7:  Create HDF5 file to store the result------------------------------
-	l3name  = output_prefix + '.A{:04d}{:03d}.'.format(year[0],day_in_year[0])
-	
-	subname = 'serial_output_daily_test.h5'
 	ff=h5py.File(output_dir+l3name+subname,'w')
 
 	PC=ff.create_dataset('lat_bnd',data=map_lat)
