@@ -5,10 +5,10 @@ Please check documents in examples folder to see examples on how to use our soft
 ### Installation
 #### Conda environment setup
 ```
-conda create -n MODIS_Aggregation -c conda-forge python=3.7 libnetcdf netCDF4 netCDF4 dask distributed xarray h5py
+conda create -n MODIS_Aggregation -c conda-forge python=3.7 libnetcdf netCDF4 h5py
 
 >> git clone https://github.com/big-data-lab-umbc/MODIS_Aggregation.git
->> cd MODIS
+>> cd MODIS_Aggregation
 >> python setup.py install
 ```
 
