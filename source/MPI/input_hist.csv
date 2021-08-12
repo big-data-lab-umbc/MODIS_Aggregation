@@ -1,6 +1,0 @@
-Variable_name           cloud_top_pressure_1km        cloud_top_temperature_1km     Cloud_Top_height        
-Bin_number              10                            40                            1080 
-Left_side_boundary      20                            165                           305 
-Right_side_boundary     18                            500                           75000
-
-
