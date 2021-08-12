@@ -4,14 +4,9 @@
 
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
-    readme = readme_file.read()
-
-with open('HISTORY.rst') as history_file:
-    history = history_file.read()
 
 install_requires = set()
-with open("requirements_dev.txt") as f:
+with open("requirements.txt") as f:
     for dep in f.read().split('\n'):
         if dep.strip() != '' and not dep.startswith('-e'):
             install_requires.add(dep)
@@ -38,7 +33,7 @@ setup(
     },
     install_requires=list(install_requires),
     license="Apache Software License 2.0",
-    long_description=readme + '\n\n' + history,
+    long_description="MODIS AGGREGATION",
     include_package_data=True,
     keywords='MODIS',
     name='MODIS',
