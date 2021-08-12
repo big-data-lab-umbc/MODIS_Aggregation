@@ -1,0 +1,6 @@
+netCDF4
+h5py
+mpi4py
+pandas
+pytest
+matplotlib

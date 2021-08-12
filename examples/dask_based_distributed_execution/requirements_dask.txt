@@ -1,0 +1,8 @@
+netCDF4
+h5py
+dask
+distributed
+xarray
+pandas
+pytest
+matplotlib

@@ -1,4 +1,3 @@
 netCDF4
-dask
-distributed
-xarray
+h5py
+pandas
