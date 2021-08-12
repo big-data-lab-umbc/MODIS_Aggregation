@@ -20,7 +20,7 @@ The code is tested with Python 3.7
 - PhD student: Jianyu Zheng, Department of Physics, UMBC
 - PhD student: Chamara Rajapakshe, Department of Physics, UMBC
 - PhD student: Pei Guo, Department of Information Systems, UMBC
-- PhD student: Xin Wang, Department of Information Systems, UMBC
+- PhD student: Xin Huang, Department of Information Systems, UMBC
 - MS student: Supriya Sangondimath, Department of Information Systems, UMBC
 - MS student: [Savio Kay](https://saviokay.com), Department of Information Systems, UMBC
 - MS student: Deepak Prakash, Department of Information Systems, UMBC
