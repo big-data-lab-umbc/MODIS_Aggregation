@@ -18,7 +18,7 @@
 #              cloud_emissivity_1km
 #              Cloud_Fraction
 #              cloud_top_height_1km
-python3 MODIS_Aggregation_Local.py data_path.csv 2008/01/01 2008/01/31 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 input_file_1km.csv input_Jhist_1km.csv
+python3 MODIS_Aggregation_Local.py ../data_path.csv 2008/01/01 2008/01/31 [-90,90,-180,180] [1,1] [5] 1 1 1 1 1 1 1 ../input_file_1km.csv ../input_Jhist_1km.csv
 
 # Example 2: Choose the time from 2008/01/01 to 2008/01/31 with the region [-90,90,-180,180] with grid size [1,1] with sampling rate 3
 #			 Calculate Minimum, Maximum, Mean, Pixel Counts, Standard Deviation, Histogram and Joint Histogram.
