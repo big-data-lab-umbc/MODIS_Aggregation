@@ -38,12 +38,12 @@ import timeit
 import random
 import numpy as np
 import pandas as pd
-from mpi4py import MPI
+#from mpi4py import MPI
 from netCDF4 import Dataset
 from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
-import MODIS_Aggregation
+from MODIS_Aggregation import *
 
 if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
@@ -205,7 +205,7 @@ if __name__ =='__main__':
 			name_idx = tmp_idx
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			tmp_data,lonam,unit,fill,scale,offst = readEntry(key,ncfile)
+			tmp_data,lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
 			unit_list  = np.append(unit_list,unit)
 			scale_list = np.append(scale_list,scale)
 			offst_list = np.append(offst_list,offst)
@@ -233,7 +233,7 @@ if __name__ =='__main__':
 	start_time = timeit.default_timer()
 
 	grid_data = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
-								grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx)
+								grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num)
 
 	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 

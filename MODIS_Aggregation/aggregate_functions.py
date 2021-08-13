@@ -38,7 +38,7 @@ import timeit
 import random
 import numpy as np
 import pandas as pd 
-from mpi4py import MPI
+#from mpi4py import MPI
 from netCDF4 import Dataset
 from collections import OrderedDict
 from datetime import date, datetime
@@ -52,7 +52,7 @@ def read_filelist(loc_dir,prefix,yr,day,fileformat):
 
 	return fname
 
-def readEntry(key,ncf):
+def readEntry(key,ncf,spl_num):
 	# Read the MODIS variables based on User's name list
 	rdval=np.array(ncf.variables[key]).astype(np.float)
 
@@ -74,14 +74,14 @@ def readEntry(key,ncf):
 
 	return rdval,lonam,unit,fillvalue,scale,offst
 
-def read_MODIS(varnames,fname1,fname2): 
+def read_MODIS(varnames,fname1,fname2,spl_num): 
 	# Store the data from variables after reading MODIS files
 	data={}
 	
 	# Read the Cloud Mask from MYD06 product
 	ncfile=Dataset(fname1,'r')
 
-	#CM1km = readEntry('Cloud_Mask_1km',ncfile)
+	#CM1km = readEntry('Cloud_Mask_1km',ncfile,spl_num)
 	#CM1km = np.array(ncfile.variables['Cloud_Mask_1km'])
 	#data['CM'] = (np.array(CM1km[:,:,0],dtype='byte') & 0b00000110) >>1
 	
@@ -95,7 +95,7 @@ def read_MODIS(varnames,fname1,fname2):
 		if key == 'cloud_fraction': 
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			data[key],lonam,unit,fill,scale,offst = readEntry(key,ncfile)
+			data[key],lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
 			data[key] = (data[key] - offst) / scale 
 			data[key] = (data[key] - offst) * scale 
 			
@@ -132,7 +132,7 @@ def read_MODIS(varnames,fname1,fname2):
 	return lat,lon,data
 
 def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, \
-			  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx):
+			  sts_switch,sts_name,histnames,intervals_1d,intervals_2d,key_idx):
 # Calculate Statistics pamameters
 					
 	#Min and Max
@@ -192,14 +192,14 @@ def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, 
 	return grid_data
 
 def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,hdfs, \
-					grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx):
+					grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num):
 	# This function is the data aggregation loops by number of files
 	hdfs = np.array(hdfs)
 	for j in hdfs:#range(1):#hdfs:
 		print("File Number: {} / {}".format(j,hdfs[-1]))
 	
 		# Read Level-2 MODIS data
-		lat,lon,data = read_MODIS(varnames,fname1[j],fname2[j])
+		lat,lon,data = read_MODIS(varnames,fname1[j],fname2[j],spl_num)
 		CM = data['CM']
 		
 		# Restrain lat & lon & variables in the required region 
@@ -257,7 +257,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 				# Calculate Statistics pamameters
 				grid_data = cal_stats(z,"cloud_fraction",grid_data, \
 									  Fraction,Fraction,CLD_pix,TOT_pix,Fraction,ave_val_2d, \
-									  sts_switch,sts_name,intervals_1d,intervals_2d,CF_key_idx)
+									  sts_switch,sts_name,histnames,intervals_1d,intervals_2d,CF_key_idx)
 
 				# For other variables
 				key_idx = 0
@@ -288,7 +288,7 @@ def run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_
 					# Calculate Statistics pamameters
 					grid_data = cal_stats(z,key,grid_data, \
 										  min_val,max_val,tot_val,CLD_pix,all_val,all_val_2d, \
-										  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx)
+										  sts_switch,sts_name,histnames,intervals_1d,intervals_2d,key_idx)
 
 					key_idx += 1
 
@@ -486,7 +486,7 @@ if __name__ =='__main__':
 			name_idx = tmp_idx
 			continue #Ignoreing Cloud_Fraction from the input file
 		else:
-			tmp_data,lonam,unit,fill,scale,offst = readEntry(key,ncfile)
+			tmp_data,lonam,unit,fill,scale,offst = readEntry(key,ncfile,spl_num)
 			unit_list  = np.append(unit_list,unit)
 			scale_list = np.append(scale_list,scale)
 			offst_list = np.append(offst_list,offst)
@@ -514,7 +514,7 @@ if __name__ =='__main__':
 	start_time = timeit.default_timer() 
 
 	grid_data = run_modis_aggre(fname1,fname2,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
-								grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx)
+								grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num)
 		
 	# Compute the mean cloud fraction & Statistics (Include Min & Max & Standard deviation)
 
