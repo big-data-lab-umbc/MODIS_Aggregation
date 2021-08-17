@@ -270,7 +270,7 @@ if __name__ =='__main__':
 		#grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
 		#							grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)
 		grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
-								    grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name  ,histnames)
+								    grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num)
 
 		for i in range(1,size):
 			results = comm.recv(source=i, tag=0)
@@ -367,7 +367,7 @@ if __name__ =='__main__':
 
 	else:
 		results = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
-								  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name  ,histnames)
+								  grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num)
 		massage = "Process {} finished".format(rank)
 		print(massage)
 		comm.send(results, dest=0, tag=0)
