@@ -16,6 +16,11 @@ The code is tested with Python 3.7
 
 ### Usage
 Please check the examples folder to see sample codes to import the library and use its functions for specific aggregation requirements.
+We have a quick example to run the aggregation in local environment: 
+```
+>> cd examples/local_execution
+>> sh MODIS_Aggregation_Local_Commands.sh
+```
 
 # Team members
 - Faculty: [Dr. Jianwu Wang](https://userpages.umbc.edu/~jianwu/), Department of Information Systems, UMBC
