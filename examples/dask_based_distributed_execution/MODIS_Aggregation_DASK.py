@@ -263,7 +263,7 @@ if __name__ =='__main__':
 
 	# Initiate and process the parallel by Dask
 
-	kwargv = { "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num,  "sts_name":sts_name, "histnames":histnames}
+	kwargv = { "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "sts_name":sts_name, "histnames":histnames, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num}
 
 	cluster = SLURMCluster(cores=32, memory='390 GB',processes=32, project='pi_jianwu',\
 		queue='high_mem', walltime='16:00:00', job_extra=['--exclusive', '--qos=medium+'])
