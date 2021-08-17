@@ -20,7 +20,7 @@ from netCDF4 import Dataset
 from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
-import MODIS_Aggregation
+from MODIS_Aggregation import *
 
 
 if __name__ =='__main__':

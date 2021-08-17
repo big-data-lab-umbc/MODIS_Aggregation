@@ -5,14 +5,14 @@ This folder shows examples on how to use our software.
 Folder local_execution shows our [Dask](https://dask.org/) based sample code to call our MODIS aggregation code to run serially (no parallelization) on a single machine. MODIS_Aggregation_Local.py will call MODIS_Aggregation functions to conduct aggregation.
 
 # Dask based Distributed Execution
-Folder dask_based_distributed_execution shows our [Dask](https://dask.org/) based sample code to call our MODIS aggregation code to run on a distributed cluster. MODIS_Aggregation_DASK.slurm will need to be submitted to the cluster's scheduler. Within the slurm file, MODIS_Aggregation_DASK.py is called to call MODIS_Aggregation functions in parallel.
+Folder dask_based_distributed_execution shows our [Dask](https://dask.org/) based sample code to call our MODIS aggregation code to run on a distributed cluster. MODIS_Aggregation_DASK.slurm will need to be submitted to the cluster's scheduler to allocate one node. Within the slurm file, MODIS_Aggregation_DASK.py first requests additional compute nodes via its SLURMCluster() and scale () functions, then calls MODIS_Aggregation functions in parallel on the nodes.
 
 To run the code, additional libraries in the requirements_dask.txt should be installed first.
 
 # MPI based Distributed Execution
-Folder mpi_based_distributed_execution shows our [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) based sample code to call our MODIS aggregation code to run on a distributed cluster. MODIS_Aggregation_MPI.slurm will need to be submitted to the cluster's scheduler. Within the slurm file, MODIS_Aggregation_MPI.py is called to call MODIS_Aggregation functions in parallel.
+Folder mpi_based_distributed_execution shows our [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) based sample code to call our MODIS aggregation code to run on a distributed cluster. MODIS_Aggregation_MPI.slurm will need to be submitted to the cluster's scheduler to allocate all nodes required by the execution. Within the slurm file, MODIS_Aggregation_MPI.py calls MODIS_Aggregation functions in parallel on the nodes allocated.
 
-To run the code, additional libraries in the requirements_mpi.txt should be installed first. 
+To run the code, additional libraries in the requirements_mpi.txt should be installed first.
 
 # Auxiliary Files
 The csv files on the top folder are example input files the above three execution approaches will use as inputs.

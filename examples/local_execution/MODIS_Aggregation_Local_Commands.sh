@@ -3,7 +3,7 @@
 # Guide of running the script:
 # python MODIS_Aggregation_Local.py <Data Path file> <Start Date> <End Date>
 #								  <Polygon boundaries: [lower lat, upper lat, left lon, right lon>
-# 								  <Lat & Lon Grid Size: [lat grid size, lon grid size]>
+# 								<Lat & Lon Grid Size: [lat grid size, lon grid size]>
 #								  <Sampling number larger than 0>
 #								  <1/0 for Minimum> <1/0 for Maximum> <1/0 for Mean> <1/0 for Pixel Counts>
 #								  <1/0 for Standard Deviation> <1/0 for Histogram Counts> <1/0 for Joint Histogram>

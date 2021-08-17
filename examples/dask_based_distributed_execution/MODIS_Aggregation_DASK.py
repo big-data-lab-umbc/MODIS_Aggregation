@@ -5,24 +5,6 @@
 Main Program: Run MODIS AGGREGATION IN DASK WITH FLEXIBLE STATISTICS
 Created on 2021
 @author: Xin Huang
-
-V2 Updates: Add statistics for flexible variables
-V3 Updates: Add 1d histogram with upper and lower boundaries
-V4 Updates: Add 2d histogram by using additional input file
-V5 Updates: Refine 1d histogram and 2d histogram to be user-defined intervals
-			Combine the interval with the variable names in onw file.
-            Separate 1d and 2d histogram interval in 2 files with all variables.
-V6 Updates: Add the flexible input of sampling rate, polygon region and grid sizes of Lat & Lon
-V7 Updates: Change the sampling rate starts from 3 and 4 count from 1 (Here we count from 0 so it starts from 2 and 3).
-			Add the flexible input of data path, date and time period for averaging
-V8 Updates: Change histogram count from averaged value to be all pixel values
-			Added scale_factor, add_offset and _Fillvalue as attributes to each variabes.
-			Found the problem in reading temperature and fixed it by changing the reading way:
-				For netCDF4, the variable is done by (rdval * scale) + offst
-				For MODIS HDF4 file, the variable should be done by (rdval-offst)*scale
-				It needs to be reverted from the netCDF4 reading first, then convert it in the way of HDF file.
-			Change the definition of day to match with teh current C6 MYD08 product.
-			Fixed the attributes in pixel count, histogram count and joint histogram count.
 """
 
 import os
@@ -42,7 +24,7 @@ from dask.distributed import as_completed
 from dask_jobqueue import SLURMCluster
 from dask.distributed import Client, LocalCluster
 from dask.distributed import wait
-import MODIS_Aggregation
+from MODIS_Aggregation import *
 
 
 if __name__ =='__main__':
@@ -279,23 +261,9 @@ if __name__ =='__main__':
 	filename1_chunks = np.array_split(fname1, CHUNK_NUM)
 	filename2_chunks = np.array_split(fname2, CHUNK_NUM)
 
-	# Initiate and process the parallel by Spark
-	# spark = SparkSession\
-	#	.builder\
-	#	.appName("MODIS_agg_spark")\
-	#	.getOrCreate()
-
-	#sc = spark.sparkContext
-	#grid_data = sc.parallelize(chunks, CHUNK_NUM).map(lambda x: run_modis_aggre(x,fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
-	#									sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)).reduce(addCounter)
-
 	# Initiate and process the parallel by Dask
-	#kwargv = {"fname1": fname1, "fname2": fname2, "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num,  "sts_name":sts_name, "histnames":histnames}
 
 	kwargv = { "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num,  "sts_name":sts_name, "histnames":histnames}
-
-	#def run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
-        #                                sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames):
 
 	cluster = SLURMCluster(cores=32, memory='390 GB',processes=32, project='pi_jianwu',\
 		queue='high_mem', walltime='16:00:00', job_extra=['--exclusive', '--qos=medium+'])
