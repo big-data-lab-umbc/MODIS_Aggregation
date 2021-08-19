@@ -41,7 +41,6 @@ import random
 import calendar
 import numpy as np
 import pandas as pd 
-from mpi4py import MPI
 from netCDF4 import Dataset
 from collections import OrderedDict
 from datetime import date, datetime
@@ -223,7 +222,7 @@ def  read_MODIS(varnames,fname1,fname2, spl_num):
 	return lat,lon,data
 
 
-ddef cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, \
+def cal_stats(z,key,grid_data,min_val,max_val,tot_val,count,all_val,all_val_2d, \
 			  sts_switch,sts_name,intervals_1d,intervals_2d,key_idx, histnames):
 # Calculate Statistics pamameters
 					
