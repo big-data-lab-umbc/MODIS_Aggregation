@@ -3,4 +3,4 @@ Data_input_path                                                                 
 ../../resources/data/sample_input_data/MYD03/       MYD03.A
 
 Data_output_path                                                                     File_prefix_name
-../../resources/data/sample_input_data/                          MYD08_L3
+../../resources/data/sample_output_data/                          MYD08_L3

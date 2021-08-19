@@ -2,7 +2,7 @@
 This folder shows examples on how to use our software.
 
 # Local Execution
-Folder local_execution shows our [Dask](https://dask.org/) based sample code to call our MODIS aggregation code to run serially (no parallelization) on a single machine. MODIS_Aggregation_Local.py will call MODIS_Aggregation functions to conduct aggregation.
+Folder local_execution shows our sample code to call our MODIS aggregation code to run serially (no parallelization) on a single machine. MODIS_Aggregation_Local.py will call MODIS_Aggregation functions to conduct aggregation.
 
 # Dask based Distributed Execution
 Folder dask_based_distributed_execution shows our [Dask](https://dask.org/) based sample code to call our MODIS aggregation code to run on a distributed cluster. MODIS_Aggregation_DASK.slurm will need to be submitted to the cluster's scheduler to allocate one node. Within the slurm file, MODIS_Aggregation_DASK.py first requests additional compute nodes via its SLURMCluster() and scale() functions, then calls MODIS_Aggregation functions in parallel on the nodes.
