@@ -2,5 +2,5 @@ Variable_name                Joint_Variable_name  Variable_Index      Joint_Inte
 Cloud_Top_Pressure           Emissivity           2                   0.25,0.725,0.975
 Cloud_Top_Temperature        Pressure             0                   199.5,550.0,900.0
 Cloud_Effective_Emissivity   Pressure             0                   199.5,550.0,900.0
-cloud_fraction               Pressure             0                   199.5,550.0,900.0
+cloud_fraction_CM            Pressure             0                   199.5,550.0,900.0
 Cloud_Top_Height             Pressure             0                   199.5,550.0,900.0
