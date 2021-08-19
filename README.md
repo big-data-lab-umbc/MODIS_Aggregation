@@ -14,9 +14,9 @@ conda create -n MODIS_Aggregation -c conda-forge python=3.7 libnetcdf netCDF4 h5
 
 The code is tested with Python 3.7
 
-### Usage
+### Usage examples
 Please check the examples folder to see sample codes to import the library and use its functions for specific aggregation requirements.
-We have a quick example to run the aggregation in local environment: 
+We have a quick example to run the aggregation in local environment:
 ```
 >> cd examples/local_execution
 >> sh MODIS_Aggregation_Local_Commands.sh
