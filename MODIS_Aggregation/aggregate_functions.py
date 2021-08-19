@@ -38,14 +38,15 @@ import sys
 import h5py
 import timeit
 import random
+import calendar
 import numpy as np
 import pandas as pd 
-#from mpi4py import MPI
+from mpi4py import MPI
 from netCDF4 import Dataset
 from collections import OrderedDict
 from datetime import date, datetime
 from dateutil.rrule import rrule, DAILY, MONTHLY
-	
+
 #This function is used for unbit the cloud mask from MYD06 product	
 def bits_stripping(bit_start,bit_count,value):
     bitmask=pow(2,bit_start+bit_count)-1
