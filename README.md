@@ -17,6 +17,8 @@ The code is tested with Python 3.7
 ### Usage examples
 Please check the [examples](examples) folder to see sample codes to import the library and use its functions for specific aggregation requirements. The examples mainly demonstrate how to conduct local execution, Dask-based distributed execution and MPI-based distributed execution. Besides these core usage examples, we also show examples for result comparison and service based deployment.
 
+Before running the aggregation example, please read the README.md in the [examples](examples) folder for the instruction on downloading the Level-2 input data.
+
 To run the aggregation example in local environment:
 ```
 >> cd examples/local_execution
