@@ -1,6 +1,6 @@
-Data_input_path                                                                      File_prefix_name
-../../resources/data/sample_input_data/MYD06_L2/    MYD06_L2.A
-../../resources/data/sample_input_data/MYD03/       MYD03.A
+Data_input_path                                           File_prefix_name
+../../resources/data/sample_input_data/MYD06_L2/          MYD06_L2.A
+../../resources/data/sample_input_data/MYD03/             MYD03.A
 
-Data_output_path                                                                     File_prefix_name
-../../resources/data/sample_output_data/                          MYD08_L3
+Data_output_path                                          File_prefix_name
+../../resources/data/sample_output_data/                  MYD08_L3
