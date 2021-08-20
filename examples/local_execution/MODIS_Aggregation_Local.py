@@ -6,7 +6,7 @@ Main Program: Run MODIS AGGREGATION IN SERIES WITH FLEXIBLE STATISTICS
 
 Created on 2019
 
-@author: Jianyu Zheng
+@author: Jianyu Zheng (Email: jzheng3@umbc.edu)
 
 V2 Updates: Add statistics for flexible variables
 
@@ -29,6 +29,9 @@ V8 Updates: Change histogram count from averaged value to be all pixel values
 				For netCDF4, the variable is done by (rdval * scale) + offst
 				For MODIS HDF4 file, the variable should be done by (rdval-offst)*scale
 				It needs to be reverted from the netCDF4 reading first, then convert it in the way of HDF file.
+
+V9 Updates: Change the definition of day to match with teh current C6 MOD08/MYD08 product.
+			Fixed the attributes in pixel count, histogram count and joint histogram count.
 """
 
 import os
@@ -63,6 +66,7 @@ if __name__ =='__main__':
 	#	print(fname1[i],fname2[i])
 	#sys.exit()
 
+	print("-------- START AGGREGATION --------")
 	grid_data = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,filenum, \
 								grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx, spl_num, sts_name, histnames)
 		
@@ -144,5 +148,6 @@ if __name__ =='__main__':
 	ff.close()
 
 	print(l3name+' Saved!')
+	print("-------- AGGREGATION COMPLETED --------")
 	#---------------------------COMPLETED------------------------------------------------------
 

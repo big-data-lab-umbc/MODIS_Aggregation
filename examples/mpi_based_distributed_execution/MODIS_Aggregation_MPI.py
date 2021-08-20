@@ -3,8 +3,10 @@
 # -*- coding: utf-8 -*-
 """
 Main Program: Run MODIS AGGREGATION IN MPI WITH FLEXIBLE STATISTICS
-Created on 2019
-@author: Jianyu Zheng
+
+Created on 2020
+
+@author: Jianyu Zheng (Email: jzheng3@umbc.edu)
 """
 
 import os
@@ -36,6 +38,8 @@ if __name__ =='__main__':
 	# Start counting operation time
 	start_time = timeit.default_timer()
 
+	print("-------- START AGGREGATION --------")
+	
 	# Initiate MPI
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
@@ -141,6 +145,7 @@ if __name__ =='__main__':
 		ff.close()
 
 		print(l3name+' Saved!')
+		print("-------- AGGREGATION COMPLETED --------")
 
 	else:
 		results = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
