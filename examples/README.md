@@ -26,7 +26,7 @@ Replace <put your valid download token here> by your newly requested token
 ### Step 4: check the MYD06_L2 & MYD03 folder in resources/data/sample_input_data/ for the downloaded data.
 
 ## Replacement for other MODIS Level-2 dataset
-Users can explore other MODIS Level-2 dataset through https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/. The wget command should be change accordingly if users want to download MODIS Level-2 dataset other than MYD06_L2 and MYD03.
+Users can explore other MODIS Level-2 dataset through https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/. The wget command should be changed accordingly if users want to download MODIS Level-2 dataset other than MYD06_L2 and MYD03.
 
 # Local Execution
 Folder local_execution shows our sample code to call our MODIS aggregation code to run serially (no parallelization) on a single machine. MODIS_Aggregation_Local.py will call MODIS_Aggregation functions to conduct aggregation.
