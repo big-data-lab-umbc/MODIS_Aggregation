@@ -28,7 +28,7 @@ To run the aggregation example in local environment:
 # Team members
 - Faculty: [Dr. Jianwu Wang](https://userpages.umbc.edu/~jianwu/), Department of Information Systems, UMBC
 - Faculty: [Dr. Zhibo Zhang](https://physics.umbc.edu/people/faculty/zhang/), Department of Physics, UMBC
-- PhD student: Jianyu Zheng, Department of Physics, UMBC
+- PhD student: [Jianyu Zheng](https://acros.umbc.edu/group-members/), Department of Physics, UMBC
 - PhD student: Chamara Rajapakshe, Department of Physics, UMBC
 - PhD student: Pei Guo, Department of Information Systems, UMBC
 - PhD student: Xin Huang, Department of Information Systems, UMBC
