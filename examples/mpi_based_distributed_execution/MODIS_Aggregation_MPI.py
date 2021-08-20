@@ -29,9 +29,11 @@ if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
 
 	#--------------STEP 1: Read User Inputs and Initial Paramters for Aggregation--------------------
-	fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,map_lon,map_lat,grid_lon,grid_lat,gap_x,gap_y,total_file_num, \
+	fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,map_lon,map_lat,grid_lon,grid_lat,gap_x,gap_y,filenum, \
 	grid_data,sts_switch,varnames,intervals_1d,intervals_2d,bin_num1,bin_num2,var_idx,spl_num,sts_name,histnames, \
 	output_dir,l3name,unit_list,scale_list,offst_list,longname_list,fillvalue_list = read_user_inputs()
+
+	total_file_num = len(filenum)
 
 	#--------------STEP 2: Start Aggregation------------------------------------------------
 
@@ -149,7 +151,7 @@ if __name__ =='__main__':
 
 	else:
 		results = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
-								  grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num)
+								  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx,spl_num,sts_name,histnames)
 		massage = "Process {} finished".format(rank)
 		print(massage)
 		comm.send(results, dest=0, tag=0)
