@@ -2,7 +2,7 @@
 This folder shows examples on how to use our software.
 
 # Prerequisite: Instructions on Downloading Input Level-2 Data
-This instruction is to guide users to download the required MODIS Level-2 data for the example runs.
+This section guides users to download the required MODIS Level-2 data for the following example runs.
 
 ## Requirement of Input Level-2 Data
 Our aggregation code requires the input Level-2 data to cover the time range of at least one day with additional 3 hours. The one-day data is minimum for aggregation of daily Level-3 data. The additional 3 hours after the selected day is for the adjustment of the new Definition of Day (Reference: Page 5 to 7 in https://atmosphere-imager.gsfc.nasa.gov/sites/default/files/ModAtmo/documents/L3_ATBD_C6_C61_2020_08_06.pdf).
