@@ -29,7 +29,8 @@ V8 Updates: Change histogram count from averaged value to be all pixel values
 				For netCDF4, the variable is done by (rdval * scale) + offst
 				For MODIS HDF4 file, the variable should be done by (rdval-offst)*scale 
 				It needs to be reverted from the netCDF4 reading first, then convert it in the way of HDF file.
-			Change the definition of day to match with teh current C6 MYD08 product.
+
+V9 Updates: Change the definition of day to match with teh current C6 MOD08/MYD08 product.
 			Fixed the attributes in pixel count, histogram count and joint histogram count.
 """
 
