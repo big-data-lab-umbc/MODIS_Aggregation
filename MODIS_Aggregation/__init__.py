@@ -1,7 +1,7 @@
 """Top-level package for MODIS."""
 
-__author__ = """Sukhada Deshpande"""
-__email__ = 'sdeshpa1@umbc.edu'
+__author__ = """X. Huang"""
+__email__ = 'xinh1@umbc.edu'
 __version__ = '0.1.0'
 
 
@@ -15,6 +15,7 @@ from .aggregate_functions import *
 # be able to access:
 __all__ = [
     'read_filelist'
+    ,'read_user_inputs'
     ,'readEntry'
     ,'read_MODIS'
     ,'cal_stats'
