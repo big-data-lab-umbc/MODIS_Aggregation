@@ -7,7 +7,7 @@ This section guides users to download the required MODIS Level-2 data for the fo
 ## Requirement of Input Level-2 Data
 Our aggregation code requires the input Level-2 data to cover the time range of at least one day with additional 3 hours. The one-day data is minimum for aggregation of daily Level-3 data. The additional 3 hours after the selected day is for the adjustment of the new Definition of Day. Reference: Page 5 to 7 in [MODIS Atmosphere L3 Global Gridded Product Algorithm Theoretical Basis Document (ATBD) & Users Guide for C6.1 products: 08_D3, 08_E3, 08_M3](https://atmosphere-imager.gsfc.nasa.gov/sites/default/files/ModAtmo/documents/L3_ATBD_C6_C61_2020_08_06.pdf).
 
-Note that the wget command for MODIS data download does not allow to download part of data within a day. Therefore, the download process covers two days Level-2 data including MYD06_L2 (Cloud Product) and MYD03 (Geolocation Product), which will take 47G disk space in total.
+Note that the wget command for MODIS data download does not allow to download part of data within a day. Therefore, the sample download script (download_modis.sh) will download two days Level-2 data including MYD06_L2 (Cloud Product) and MYD03 (Geolocation Product), which will take 47G disk space in total.
 
 ## Level-2 Data Download Instruction (wget)
 
