@@ -16,7 +16,7 @@
 #              Cloud_Effective_Emissivity
 #              cloud_fraction_CM         
 #              Cloud_Top_Height          
-python3 dask_based_modis_aggregation.py ../data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [1] 1 1 1 1 1 1 1 ../input_file_5km.csv ../input_Jhist_5km.csv
+python3 MODIS_Aggregation_DASK.py ../data_path.csv 2008/01/01 2008/01/01 [-90,90,-180,180] [1,1] [1] 1 1 1 1 1 1 1 ../input_file_5km.csv ../input_Jhist_5km.csv
 
 # Example 2: Choose the time from 2008/01/01 to 2008/01/31 (Monthly) with the region [-90,90,-180,180] with grid size [1,1] with sampling rate 1
 #			 Calculate Minimum, Maximum, Mean, Pixel Counts, Standard Deviation, Histogram and Joint Histogram.
