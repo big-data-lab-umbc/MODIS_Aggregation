@@ -2,11 +2,11 @@
 # coding:utf8
 # -*- coding: utf-8 -*-
 """
-Main Program: Run MODIS AGGREGATION IN SERIES WITH FLEXIBLE STATISTICS 
+Main Program: Run MODIS AGGREGATION WITH FLEXIBLE STATISTICS 
 
 Created on 2019
 
-@author: Jianyu Zheng
+@author: Jianyu Zheng (Email: jzheng3@umbc.edu)
 
 V2 Updates: Add statistics for flexible variables
 

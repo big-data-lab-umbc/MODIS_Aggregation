@@ -23,7 +23,7 @@ Replace <put your valid download token here> by your newly requested token
 
 >> ./download_modis.sh
 ```
-### Step 4: check the MYD06_L2 & MYD03 folder in resources/data/sample_input_data/ for the downloaded data.
+### Step 4: check the [MYD06_L2](https://github.com/big-data-lab-umbc/MODIS_Aggregation/tree/master/resources/data/sample_input_data/MYD06_L2) & [MYD03](https://github.com/big-data-lab-umbc/MODIS_Aggregation/tree/master/resources/data/sample_input_data/MYD03) folder for the downloaded data.
 
 ## Replacement for other MODIS Level-2 dataset
 Users can explore other MODIS Level-2 dataset through https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/. The wget command should be changed accordingly if users want to download MODIS Level-2 dataset other than MYD06_L2 and MYD03.

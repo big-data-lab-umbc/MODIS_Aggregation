@@ -3,8 +3,10 @@
 # -*- coding: utf-8 -*-
 """
 Main Program: Run MODIS AGGREGATION IN MPI WITH FLEXIBLE STATISTICS
-Created on 2019
-@author: Jianyu Zheng
+
+Created on 2020
+
+@author: Jianyu Zheng (Email: jzheng3@umbc.edu)
 """
 
 import os
@@ -27,15 +29,19 @@ if __name__ =='__main__':
 # This is the main program for using concurrent to speed up the whole process
 
 	#--------------STEP 1: Read User Inputs and Initial Paramters for Aggregation--------------------
-	fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,map_lon,map_lat,grid_lon,grid_lat,gap_x,gap_y,total_file_num, \
+	fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,map_lon,map_lat,grid_lon,grid_lat,gap_x,gap_y,filenum, \
 	grid_data,sts_switch,varnames,intervals_1d,intervals_2d,bin_num1,bin_num2,var_idx,spl_num,sts_name,histnames, \
 	output_dir,l3name,unit_list,scale_list,offst_list,longname_list,fillvalue_list = read_user_inputs()
+
+	total_file_num = len(filenum)
 
 	#--------------STEP 2: Start Aggregation------------------------------------------------
 
 	# Start counting operation time
 	start_time = timeit.default_timer()
 
+	print("-------- START AGGREGATION --------")
+	
 	# Initiate MPI
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
@@ -141,10 +147,11 @@ if __name__ =='__main__':
 		ff.close()
 
 		print(l3name+' Saved!')
+		print("-------- AGGREGATION COMPLETED --------")
 
 	else:
 		results = run_modis_aggre(fname1,fname2,day_in_year,shift_hour,NTA_lats,NTA_lons,grid_lon,grid_lat,gap_x,gap_y,fileloop, \
-								  grid_data,sts_switch,sts_name,histnames,varnames,intervals_1d,intervals_2d,var_idx,spl_num)
+								  grid_data,sts_switch,varnames,intervals_1d,intervals_2d,var_idx,spl_num,sts_name,histnames)
 		massage = "Process {} finished".format(rank)
 		print(massage)
 		comm.send(results, dest=0, tag=0)

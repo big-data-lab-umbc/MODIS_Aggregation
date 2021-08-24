@@ -44,6 +44,29 @@ if __name__ =='__main__':
 	#for i in range(len(fname1)):
 	#	print(fname1[i],fname2[i])
 	#sys.exit()
+	grid_data = {}
+	bin_num1 = np.zeros(len(varnames)).astype(np.int)
+	bin_num2 = np.zeros(len(varnames)).astype(np.int)
+	grid_data['GRID_Counts'] = np.zeros(grid_lat*grid_lon).astype(np.int)
+	key_idx = 0
+	for key in varnames:
+		if sts_switch[0] == True:
+			grid_data[key+'_'+sts_name[0]] = np.zeros(grid_lat*grid_lon) + np.inf
+		if sts_switch[1] == True:
+			grid_data[key+'_'+sts_name[1]] = np.zeros(grid_lat*grid_lon) - np.inf
+		if (sts_switch[2] == True) | (sts_switch[3] == True) | (sts_switch[4] == True):
+			grid_data[key+'_'+sts_name[2]] = np.zeros(grid_lat*grid_lon)
+			grid_data[key+'_'+sts_name[3]] = np.zeros(grid_lat*grid_lon)
+			grid_data[key+'_'+sts_name[4]] = np.zeros(grid_lat*grid_lon)
+		if sts_switch[5] == True:
+			bin_interval1 = np.fromstring(intervals_1d[key_idx], dtype=np.float, sep=',' )
+			bin_num1[key_idx] = bin_interval1.shape[0]-1
+			grid_data[key+'_'+sts_name[5]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx]))
+			if sts_switch[6] == True:
+				bin_interval2 = np.fromstring(intervals_2d[key_idx], dtype=np.float, sep=',' )
+				bin_num2[key_idx] = bin_interval2.shape[0]-1
+				grid_data[key+'_'+sts_name[6]+histnames[key_idx]] = np.zeros((grid_lat*grid_lon,bin_num1[key_idx],bin_num2[key_idx]))
+		key_idx += 1
 
 	# parallel implement
 	file_num = len(fname1)
@@ -58,8 +81,9 @@ if __name__ =='__main__':
 	filename2_chunks = np.array_split(fname2, CHUNK_NUM)
 
 	# Initiate and process the parallel by Dask
+	hdfs = np.arange(len(filename1_chunks))
 
-	kwargv = { "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "filenum": filenum, "sts_switch":sts_switch, "sts_name":sts_name, "histnames":histnames, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num}
+	kwargv = { "day_in_year": day_in_year, "shift_hour": shift_hour, "NTA_lats": NTA_lats, "NTA_lons": NTA_lons, "grid_lon": grid_lon,"grid_lat": grid_lat, "gap_x": gap_x, "gap_y": gap_y, "hdfs": hdfs, "grid_data": grid_data, "sts_switch":sts_switch, "sts_name":sts_name, "histnames":histnames, "varnames": varnames, "intervals_1d":intervals_1d, "intervals_2d":intervals_2d, "var_idx":var_idx, "spl_num": spl_num}
 
 	cluster = SLURMCluster(cores=32, memory='390 GB',processes=32, project='pi_jianwu',\
 		queue='high_mem', walltime='16:00:00', job_extra=['--exclusive', '--qos=medium+'])
