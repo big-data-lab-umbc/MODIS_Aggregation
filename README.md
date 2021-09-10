@@ -39,6 +39,7 @@ To run the aggregation example in local environment:
 - MS student: Lakshmi Priyanka Kandoor, Department of Information Systems, UMBC
 
 # Publications
+- Jianyu Zheng, Xin Huang, Supriya Sangondimath, Jianwu Wang, and Zhibo Zhang. Efficient and Flexible Aggregation and Distribution of MODIS Atmospheric Products Based on Climate Analytics as a Service Framework. Remote Sensing 13, no. 17: 3541. https://doi.org/10.3390/rs13173541, 2021.
 - Jianwu Wang, Xin Huang, Jianyu Zheng, Chamara Rajapakshe, Savio Kay, Lakshmi Kandoor, Thomas Maxwell, Zhibo Zhang. Scalable Aggregation Service for Satellite Remote Sensing Data. In Proceedings of the 20th International Conference on Algorithms and Architectures for Parallel Processing (ICA3PP 2020), pages 184-199, Springer, 2020.
 
 # Acknowledgement
